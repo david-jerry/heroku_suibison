@@ -1,6 +1,6 @@
 # SUI Byson
 
-Sui-Bison is the first of its kind community driven smart contract project on the sui blockchaiin, with expert computer engineers and mathematicians, working to ensure that we earn and grow our sui portfolio.
+Sui-Bison is the first of its kind community driven smart contract project on the sui blockchain, with expert computer engineers and mathematicians, working to ensure that we earn and grow our sui portfolio.
 
 ## Why Accumulate the SUI Tken with SUI Bison Smart Contract
 

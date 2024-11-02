@@ -4,8 +4,47 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+pyjwt = {extras = ["crypto"], version = "*"}
+itsdangerous = "*"
+aiosmtplib = "*"
+aiohttp = "==3.10.10"
+alembic = "*"
+annotated-types = "*"
+argon2-cffi = "*"
+asgiref = "*"
+asyncpg = "*"
+babel = "==2.16.0"
+bcrypt = "==4.0.1"
+ccxt = "==4.4.23"
+celery = "*"
+cloudinary = "*"
+dnspython = "*"
+fastapi = {extras = ["all"], version = "==0.115.4"}
+fastapi-pagination = "==0.12.31"
+hiredis = "*"
+humanize = "*"
+loguru = "*"
+passlib = "*"
+phonenumbers = "==8.13.47"
+pillow = "*"
+pycountry = "==24.6.1"
+pydantic = "*"
+pydantic-settings = "*"
+pydantic-extra-types = "==2.9.0"
+pysdk-sui = "==5.1"
+python-dateutil = "*"
+python-jose = "*"
+python-magic = "*"
+python-multipart = "*"
+python-slugify = "*"
+python-telegram-bot = "==21.6"
+redis = "*"
+resend = "*"
+requests = "*"
+sqlalchemy = "*"
+typing-extensions = "*"
+urllib3 = "*"
+websockets = "*"
+psycopg = {extras = ["c"], version = "*"}
 
 [dev-packages]
-
-[requires]
-python_version = "3.12"
