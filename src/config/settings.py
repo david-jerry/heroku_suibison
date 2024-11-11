@@ -9,7 +9,7 @@ def get_config() -> ProductionConfig | LocalConfig:
     LOGGER.info(f"Env: {environment}")
 
     env = LocalConfigSettings
-    if environment == "production":
+    if environment != "dev":
         env = ProductionConfigSettings
 
     return env

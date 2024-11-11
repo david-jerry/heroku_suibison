@@ -4,6 +4,7 @@ aiosmtplib
 aiohttp==3.10.10
 alembic
 annotated-types
+apscheduler==3.10.4
 argon2-cffi
 asgiref
 asyncpg
@@ -26,6 +27,7 @@ pydantic
 pydantic-settings
 pydantic-extra-types==2.9.0
 pysdk-sui==5.1
+pysui==0.71.0
 python-dateutil
 python-jose
 python-magic
@@ -36,6 +38,8 @@ redis
 resend
 requests
 sqlalchemy[asyncio]
+sqlmodel==0.0.22
+sui-python-sdk==0.1.5 # Generate sui wallets and sign transactions with this
 typing-extensions
 urllib3
 websockets

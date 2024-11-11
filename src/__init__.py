@@ -1,14 +1,9 @@
 from contextlib import asynccontextmanager
-from collections import defaultdict
-
-from fastapi.responses import JSONResponse
-from pydantic_core import ValidationError
-
-from src.apps.accounts.dependencies import get_ip_address
 from src.db.engine import init_db
 from src.utils.logger import LOGGER
 from src.middleware import register_middleware
 from src.config.settings import Config
+from src.errors import register_all_errors
 
 from fastapi import FastAPI, Request
 from fastapi_pagination import add_pagination
@@ -67,17 +62,17 @@ app = FastAPI(
     lifespan=life_span,
     license_info={
         "name": "MIT License",
-        "url": "https://github.com/david-jerry/sui-bison-api/blob/main/LICENSE",
+        "url": "https://github.com/david-jerry/sui-bison/blob/main/LICENSE",
     },
     contact={
         "name": "Jeremiah David",
         "url": "https://github.com/david-jerry",
         "email": "jeremiahedavid@gmail.com",
     },
-    terms_of_service="https://github.com/david-jerry/portfolio-api/blob/main/TERMS.md",
-    openapi_url=f"{version_prefix}/openapi.json",
-    docs_url=f"{version_prefix}",
-    redoc_url=f"{version_prefix}/docs",
+    terms_of_service="https://github.com/david-jerry/sui-bison/blob/main/TERMS.md",
+    openapi_url=f"/{version}/openapi.json",
+    docs_url=f"/{version}/docs",
+    redoc_url=f"/{version}",
 )
 
 register_all_errors(app)
@@ -85,3 +80,4 @@ register_all_errors(app)
 register_middleware(app)
 
 add_pagination(app)
+

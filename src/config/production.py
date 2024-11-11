@@ -7,7 +7,7 @@ class ProductionConfig(BaseConfig):
     REDIS_URL: str = "redis://localhost:6379/0"
     CELERY_BROKER_URL: str
     CELERY_RESULT_BACKEND: str
-
+    SUI_RPC: str
 
     model_config = SettingsConfigDict(
         env_file=".env.production", extra="ignore", env_file_encoding="utf-8"
