@@ -29,9 +29,9 @@ user_services = UserServices()
 
 
 async def run_cncurrent_tasks():
-    create_matrix_pool()
-    calculate_users_matrix_pool_share()
-    calculate_daily_tasks()
+    await create_matrix_pool()
+    await calculate_users_matrix_pool_share()
+    await calculate_daily_tasks()
 
 
 async def calculate_users_matrix_pool_share():
