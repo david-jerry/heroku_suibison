@@ -29,12 +29,9 @@ user_services = UserServices()
 
 
 async def run_cncurrent_tasks():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(fetch_sui_price())
-    loop.run_until_complete(add_fast_bonus())
-    loop.run_until_complete(fetch_sui_balance())
-    loop.close()
+    await fetch_sui_price()
+    await add_fast_bonus()
+    await fetch_sui_balance()
 
 async def fetch_sui_price():
     try:
