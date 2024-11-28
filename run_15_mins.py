@@ -112,7 +112,7 @@ async def check_ranking():
 
             if user.wallet:
                 rankErning, rank = await get_rank(user.totalTeamVolume, user.wallet.totalDeposit, referrals)
-                
+                LOGGER.debug(f"Ranking: {rankErning} | Rank: {rank}")
                 if user.rank != rank:
                     user.rank = rank
 
