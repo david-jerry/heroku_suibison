@@ -29,10 +29,12 @@ user_services = UserServices()
 
 
 async def run_cncurrent_tasks():
-    async with asyncio.TaskGroup() as group:
-        group.create_task(fetch_sui_price())
-        group.create_task(add_fast_bonus())
-        group.create_task(fetch_sui_balance())
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(fetch_sui_price())
+    loop.run_until_complete(add_fast_bonus())
+    loop.run_until_complete(fetch_sui_balance())
+    loop.close()
 
 async def fetch_sui_price():
     try:
@@ -47,7 +49,6 @@ async def add_fast_bonus():
     async with get_session_context() as session:
         session: AsyncSession = session
         try:
-            now = datetime.now()
             user_db = await session.exec(select(User).where(User.isBlocked == False))
             users = user_db.all()
             
@@ -56,7 +57,7 @@ async def add_fast_bonus():
             for user in users:
                 LOGGER.debug(user.userId)
                 ref_db = await session.exec(select(UserReferral).where(UserReferral.userId == user.userId).where(UserReferral.level == 1))
-                refs: List[UserReferral] = ref_db.all()
+                refs = ref_db.all()
 
                 if len(refs) > 0:
                     fast_boost_time = user.joined + timedelta(hours=24)

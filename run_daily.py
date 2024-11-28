@@ -29,10 +29,12 @@ user_services = UserServices()
 
 
 async def run_cncurrent_tasks():
-    async with asyncio.TaskGroup() as group:
-        group.create_task(create_matrix_pool())
-        group.create_task(calculate_users_matrix_pool_share())
-        group.create_task(calculate_daily_tasks())
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(create_matrix_pool())
+    loop.run_until_complete(calculate_users_matrix_pool_share())
+    loop.run_until_complete(calculate_daily_tasks())
+    loop.close()
 
 
 async def calculate_users_matrix_pool_share():
