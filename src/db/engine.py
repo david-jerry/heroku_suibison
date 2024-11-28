@@ -11,8 +11,8 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from src.config.settings import Config
 from src.utils.logger import LOGGER
 
-
-engine = create_async_engine(url=Config.DATABASE_URL, echo=False, pool_size=5, max_overflow=10)
+db_url = str(Config.DATABASE_URL)
+engine = create_async_engine(url=db_url, echo=False, pool_size=5, max_overflow=10)
 Session = sessionmaker(
     bind=engine,
     class_=AsyncSession,
