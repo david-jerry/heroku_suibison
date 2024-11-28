@@ -36,11 +36,12 @@ async def run_cncurrent_tasks():
 
 async def calculate_users_matrix_pool_share():
     async with get_session_context() as session:
+        session: AsyncSession = session
         try:
             now = datetime.now()
             # ###### CALCULATE USERS SHARE TO AN ACTIVE POOL
             matrix_db = await session.exec(select(MatrixPool).where(MatrixPool.endDate >= now))
-            active_matrix_pool_or_new: Optional[MatrixPool] = matrix_db.first()
+            active_matrix_pool_or_new = matrix_db.first()
 
             if active_matrix_pool_or_new:
                 payoutTime = active_matrix_pool_or_new.endDate + timedelta(minutes=30)
@@ -68,6 +69,7 @@ async def calculate_users_matrix_pool_share():
 
 async def calculate_daily_tasks():
     async with get_session_context() as session:
+        session: AsyncSession = session
         try:
             now = datetime.now()
             user_db = await session.exec(select(User).where(User.isBlocked == False))
@@ -132,6 +134,7 @@ async def calculate_daily_tasks():
 
 async def create_matrix_pool():
     async with get_session_context() as session:
+        session: AsyncSession = session
         try:
             now = datetime.now()
             matrix_db = await session.exec(select(MatrixPool).where(MatrixPool.endDate >= now))
