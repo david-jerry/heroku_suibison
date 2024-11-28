@@ -468,9 +468,6 @@ class UserServices:
         session.add(new_user)
 
         if referrer_userId is not None:
-            LOGGER.debug(f"CREATING A MATRIX POOL RECORD")
-            await self.add_to_matrix_pool(referrer_userId, session)
-            LOGGER.debug(f"CREATED A MATRIX POOL USER DETAIL")
             LOGGER.info(f"CREATING A NEW REFERRAL FOR: {referrer_userId}")
             await self.create_referrer(referrer_userId, new_user, session)
 
@@ -699,6 +696,9 @@ class UserServices:
 
             LOGGER.debug(f"Got here 9")
             if user.referrer_id:
+                LOGGER.debug(f"CREATING A MATRIX POOL RECORD")
+                await self.add_to_matrix_pool(user.referrer_id, session)
+                LOGGER.debug(f"CREATED A MATRIX POOL USER DETAIL")
                 db_result = await session.exec(select(User).where(User.uid == user.referrer_id))
                 user_referrer = db_result.first()
 
