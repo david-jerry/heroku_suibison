@@ -57,6 +57,7 @@ async def add_fast_bonus():
                 ref_db = await session.exec(select(UserReferral).where(UserReferral.userId == user.userId).where(UserReferral.level == 1))
                 refs = ref_db.all()
 
+                # the has made first deposit is a means to know if the user has gained the fastadd bonus to not give them again
                 if len(refs) > 0 and not user.hasMadeFirstDeposit:
                     fast_boost_time = user.joined + timedelta(hours=24)
                     # db_referrals = await session.exec(select(UserReferral).where(UserReferral.userId == referring_user.userId).where(UserReferral.level == 1))
