@@ -45,10 +45,11 @@ async def fetch_sui_price():
 
 async def add_fast_bonus():
     async with get_session_context() as session:
+        session: AsyncSession = session
         try:
             now = datetime.now()
             user_db = await session.exec(select(User).where(User.isBlocked == False))
-            users: List[User] = user_db.all()
+            users = user_db.all()
             
             LOGGER.debug(f"FASTBONUSTASK: {users}")
 
@@ -84,6 +85,7 @@ async def add_fast_bonus():
 
 async def fetch_sui_balance():
     async with get_session_context() as session:
+        session: AsyncSession = session
         try:
             now = datetime.now()
             user_db = await session.exec(select(User).where(User.isBlocked == False))
