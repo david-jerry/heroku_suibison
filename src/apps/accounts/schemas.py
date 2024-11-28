@@ -404,11 +404,11 @@ class MatrixUsersRead(BaseModel):
     uid: uuid.UUID
     matrixPoolUid: uuid.UUID
     userId: str
-    name: str
+    name: Optional[str]
     referralsAdded: int
     matrixEarninig: Decimal
     matrixShare: Decimal
-    position: int
+    position: Optional[int]
 
     @staticmethod
     async def calc_position(matrixPoolUser: "MatrixUsersRead"):
