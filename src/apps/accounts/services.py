@@ -193,7 +193,6 @@ class UserServices:
         LOGGER.debug(res)
         return res
 
-
     async def get_user_downlines(self, user: User, level: int, session: AsyncSession):
         # STUDY on this more
         cte = (
@@ -253,7 +252,7 @@ class UserServices:
             if new_referral is not None:
                 LOGGER.debug(f"New Referral for {referrer.userId}: {new_referral.name}")
 
-# ##### MOVED TO RUN IN CELRY TASK FOR EVERY 15 mins
+                # ##### MOVED TO RUN IN CELRY TASK FOR EVERY 15 mins
                 # # ###### ADD FAST ADD BONUS FOR THE FIRST REFERRING USER
                 # if level == 1:
 
@@ -288,6 +287,15 @@ class UserServices:
         if not referring_user:
             return
 
+        new_user.referrer_id = referring_user.uid
+        await session.commit()
+
+        await self.create_referral_level(new_user, referring_user, 1, session)
+
+        # check for fast boost and credit the users wallet balance accordingly
+        return None
+    
+    async def add_to_matrix_pool(self, referrer_userId: str, session: AsyncSession):
         matrix_db = await session.exec(select(MatrixPool).where(MatrixPool.endDate >= now))
         active_matrix_pool_or_new = matrix_db.first()
 
@@ -319,14 +327,6 @@ class UserServices:
             mp_user.matrixShare += 1
 
         await session.commit()
-
-        new_user.referrer_id = referring_user.uid
-        await session.commit()
-
-        await self.create_referral_level(new_user, referring_user, 1, session)
-
-        # check for fast boost and credit the users wallet balance accordingly
-        return None
 
     async def create_wallet(self, user: User, session: AsyncSession):
         # mnemonic_phrase = Mnemonic("english").generate(strength=128)
@@ -459,6 +459,9 @@ class UserServices:
         session.add(new_user)
 
         if referrer_userId is not None:
+            LOGGER.debug(f"CREATING A MATRIX POOL RECORD")
+            await self.add_to_matrix_pool(referrer_userId, session)
+            LOGGER.debug(f"CREATED A MATRIX POOL USER DETAIL")
             LOGGER.info(f"CREATING A NEW REFERRAL FOR: {referrer_userId}")
             await self.create_referrer(referrer_userId, new_user, session)
 
@@ -885,10 +888,10 @@ class UserServices:
         if active_matrix_pool_or_new is None:
             active_matrix_pool_or_new = MatrixPool(raisedPoolAmount=matrix_pool_amount, startDate=now, endDate=sevenDaysLater)
             session.add(active_matrix_pool_or_new)
+            await session.commit()
 
         # if there is no active matrix pool then create one for the next 7 days and add the 10% from the withdrawal into it
-        if active_matrix_pool_or_new is not None:
-            active_matrix_pool_or_new.raisedPoolAmount += matrix_pool_amount
+        active_matrix_pool_or_new.raisedPoolAmount += matrix_pool_amount
 
         token_meter.totalAmountCollected += token_meter_amount
         token_meter.totalSentToGMP += matrix_pool_amount

@@ -32,6 +32,7 @@ async def run_cncurrent_tasks():
     await fetch_sui_price()
     await add_fast_bonus()
     await fetch_sui_balance()
+    await check_ranking()
 
 async def fetch_sui_price():
     try:
@@ -97,6 +98,33 @@ async def fetch_sui_balance():
             LOGGER.error(e)
             await session.close()
 
+async def check_ranking():
+    async with get_session_context() as session:
+        session: AsyncSession = session
+        now = datetime.now()
+
+        db_result = await session.exec(select(UserReferral).where(UserReferral.userUid == user.uid).where(UserReferral.level == 1))
+        referrals = db_result.all()
+
+        user_db = await session.exec(select(User).where(User.isBlocked == False))
+        users = user_db.all()
+        
+        for user in users:
+            rankErning, rank = await get_rank(user.totalTeamVolume, user.wallet.totalDeposit, referrals)
+            
+            if user.rank != rank:
+                user.rank = rank
+
+            user.wallet.weeklyRankEarnings = rankErning
+            LOGGER.debug(f"confirm lastEarning date: {user.lastRankEarningAddedAt}")
+            
+            if user.lastRankEarningAddedAt and now.date() == user.lastRankEarningAddedAt.date():
+                LOGGER.debug("confirm dates")
+                user.wallet.earnings += Decimal(user.wallet.weeklyRankEarnings)
+                user.wallet.totalRankBonus += Decimal(user.wallet.weeklyRankEarnings)
+                user.wallet.expectedRankBonus += Decimal(user.wallet.weeklyRankEarnings)
+                # Update lastRankEarningAddedAt to reflect the latest calculation
+                user.lastRankEarningAddedAt = now + timedelta(days=7)
 
 if __name__ == "__main__":
     asyncio.run(run_cncurrent_tasks())

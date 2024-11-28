@@ -46,7 +46,7 @@ async def calculate_users_matrix_pool_share():
             if active_matrix_pool_or_new:
                 payoutTime = active_matrix_pool_or_new.endDate + timedelta(minutes=30)
                 mp_users_db = await session.exec(select(MatrixPoolUsers).where(MatrixPoolUsers.matrixPoolUid == active_matrix_pool_or_new.uid))
-                mp_users: List[MatrixPoolUsers] = mp_users_db.all()
+                mp_users = mp_users_db.all()
 
                 for mp_user in mp_users:
                     percentage, earning = await matrix_share(mp_user)
@@ -78,31 +78,27 @@ async def calculate_daily_tasks():
             for user in users:
                 # ######### CALCULATTE RANK EARNING ########## #
 
-                db_result = await session.exec(select(UserReferral).where(UserReferral.userUid == user.uid).where(UserReferral.level == 1))
-                referrals = db_result.all()
+                # db_result = await session.exec(select(UserReferral).where(UserReferral.userUid == user.uid).where(UserReferral.level == 1))
+                # referrals = db_result.all()
 
-                rankErning, rank = await get_rank(user.totalTeamVolume, user.wallet.totalDeposit, referrals)
+                # rankErning, rank = await get_rank(user.totalTeamVolume, user.wallet.totalDeposit, referrals)
                 stake = user.staking
                 
+                # if user.rank != rank:
+                #     user.rank = rank
+
+                # user.wallet.weeklyRankEarnings = rankErning
+                # LOGGER.debug(f"confirm lastEarning date: {user.lastRankEarningAddedAt}")
+                
+                # if now.date() == user.lastRankEarningAddedAt.date():
+                #     LOGGER.debug("confirm dates")
+                #     user.wallet.earnings += Decimal(user.wallet.weeklyRankEarnings)
+                #     user.wallet.totalRankBonus += Decimal(user.wallet.weeklyRankEarnings)
+                #     user.wallet.expectedRankBonus += Decimal(user.wallet.weeklyRankEarnings)
+                #     # Update lastRankEarningAddedAt to reflect the latest calculation
+                #     user.lastRankEarningAddedAt = now + timedelta(days=7)
+                    
                 if stake is not None:
-                    if user.rank != rank:
-                        user.rank = rank
-
-                    user.wallet.weeklyRankEarnings = rankErning
-                    LOGGER.debug(f"confirm lastEarning date: {user.lastRankEarningAddedAt}")
-                    if now.date() == user.lastRankEarningAddedAt.date():
-                        LOGGER.debug("confirm dates")
-                        user.wallet.earnings += Decimal(user.wallet.weeklyRankEarnings)
-                        user.wallet.totalRankBonus += Decimal(user.wallet.weeklyRankEarnings)
-                        user.wallet.expectedRankBonus += Decimal(user.wallet.weeklyRankEarnings)
-                        # Update lastRankEarningAddedAt to reflect the latest calculation
-                        user.lastRankEarningAddedAt = now + timedelta(days=7)
-
-
-
-
-
-
                     # ########## CALCULATE ROI AND INTEREST ########## #
 
                     # accrue interest until it reaches 4% then create the end date to be 100 days in the future
