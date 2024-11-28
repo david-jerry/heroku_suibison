@@ -50,7 +50,7 @@ async def calculate_users_matrix_pool_share():
                 for mp_user in mp_users:
                     percentage, earning = await matrix_share(mp_user)
                     mp_user.matrixShare = percentage
-                    mp_user.matrixEarning = earning
+                    mp_user.matrixEarninig = earning
                     if active_matrix_pool_or_new.endDate <= payoutTime:
                         mpu_db = await session.exec(select(User).where(User.userId == mp_user.userId))
                         mpu: Optional[User] = mpu_db.first()
