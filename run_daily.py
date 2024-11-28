@@ -81,43 +81,44 @@ async def calculate_daily_tasks():
 
                 rankErning, rank = await get_rank(user.totalTeamVolume, user.wallet.totalDeposit, referrals)
                 stake = user.staking
+                
+                if user.userId != "1234567890" or user.userId != "0987654321":
+                    if user.rank != rank:
+                        user.rank = rank
 
-                if user.rank != rank:
-                    user.rank = rank
-
-                user.wallet.weeklyRankEarnings = rankErning
-                if now.date() == user.lastRankEarningAddedAt.date():
-                    user.wallet.earnings += Decimal(user.wallet.weeklyRankEarnings)
-                    user.wallet.totalRankBonus += Decimal(user.wallet.weeklyRankEarnings)
-                    user.wallet.expectedRankBonus += Decimal(user.wallet.weeklyRankEarnings)
-                    # Update lastRankEarningAddedAt to reflect the latest calculation
-                    user.lastRankEarningAddedAt = now + timedelta(days=7)
-
-
-
+                    user.wallet.weeklyRankEarnings = rankErning
+                    if now.date() == user.lastRankEarningAddedAt.date():
+                        user.wallet.earnings += Decimal(user.wallet.weeklyRankEarnings)
+                        user.wallet.totalRankBonus += Decimal(user.wallet.weeklyRankEarnings)
+                        user.wallet.expectedRankBonus += Decimal(user.wallet.weeklyRankEarnings)
+                        # Update lastRankEarningAddedAt to reflect the latest calculation
+                        user.lastRankEarningAddedAt = now + timedelta(days=7)
 
 
 
-                # ########## CALCULATE ROI AND INTEREST ########## #
 
-                # accrue interest until it reaches 4% then create the end date to be 100 days in the future
-                if (stake.end is None and stake.start is not None) and (stake.roi < Decimal(0.04)) and (stake.nextRoiIncrease == now):
-                    # calculate interest based on remaining days and ensure the roi is less than 4%
-                    new_roi = stake.roi + Decimal(0.005)
-                    stake.roi = new_roi
-                    stake.nextRoiIncrease = now + timedelta(days=5)
-                elif (stake.end is None and stake.start is not None) and stake.roi == Decimal(0.04):
-                    stake.end = now + timedelta(days=100)
 
-                if stake.start is not None:
-                    new_roi = stake.roi + Decimal(0.005)
-                    interest_earned = stake.deposit * new_roi
-                    user.wallet.earnings += Decimal(interest_earned)
 
-                if stake.end.date() == now.date():
-                    stake.roi = Decimal(0)
-                    stake.end = None
-                    stake.nextRoiIncrease = None
+                    # ########## CALCULATE ROI AND INTEREST ########## #
+
+                    # accrue interest until it reaches 4% then create the end date to be 100 days in the future
+                    if (stake.end is None and stake.start is not None) and (stake.roi < Decimal(0.04)) and (stake.nextRoiIncrease == now):
+                        # calculate interest based on remaining days and ensure the roi is less than 4%
+                        new_roi = stake.roi + Decimal(0.005)
+                        stake.roi = new_roi
+                        stake.nextRoiIncrease = now + timedelta(days=5)
+                    elif (stake.end is None and stake.start is not None) and stake.roi == Decimal(0.04):
+                        stake.end = now + timedelta(days=100)
+
+                    if stake.start is not None:
+                        new_roi = stake.roi + Decimal(0.005)
+                        interest_earned = stake.deposit * new_roi
+                        user.wallet.earnings += Decimal(interest_earned)
+
+                    if stake.end.date() == now.date():
+                        stake.roi = Decimal(0)
+                        stake.end = None
+                        stake.nextRoiIncrease = None
 
 
 
