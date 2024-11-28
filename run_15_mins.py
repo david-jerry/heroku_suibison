@@ -51,10 +51,10 @@ async def add_fast_bonus():
             users: List[User] = user_db.all()
 
             for user in users:
-                ref_db = await session.exec(select(UserReferral).where(UserReferral.userId == user.userId))
+                ref_db = await session.exec(select(UserReferral).where(UserReferral.userId == user.userId).where(UserReferral.level == 1))
                 refs: List[UserReferral] = ref_db.all()
 
-                if refs.level == 1:
+                if len(refs) > 0:
                     fast_boost_time = user.joined + timedelta(hours=24)
                     # db_referrals = await session.exec(select(UserReferral).where(UserReferral.userId == referring_user.userId).where(UserReferral.level == 1))
                     # referrals = db_referrals.all()
@@ -84,7 +84,7 @@ async def fetch_sui_balance():
             users = user_db.all()
 
             for user in users:
-                LOGGER.debug(f"checking here: user")
+                LOGGER.debug(f"checking here: {user}")
                 await user_services.stake_sui(user, session)
             await session.close()
         except Exception as e:
