@@ -111,6 +111,7 @@ async def calculate_daily_tasks():
                     stake.end = now + timedelta(days=100)
 
                 if stake.start is not None:
+                    new_roi = stake.roi + Decimal(0.005)
                     interest_earned = stake.deposit * new_roi
                     user.wallet.earnings += Decimal(interest_earned)
 
