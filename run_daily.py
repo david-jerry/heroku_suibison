@@ -120,7 +120,7 @@ async def calculate_daily_tasks():
                         user.wallet.earnings += Decimal(interest_earned)
 
                     LOGGER.debug(f"STAKE END DATTE: {stake.end}")
-                    if stake.end.date() == now.date():
+                    if stake.end is not None and stake.end.date() == now.date():
                         stake.roi = Decimal(0)
                         stake.end = None
                         stake.nextRoiIncrease = None
