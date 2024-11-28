@@ -291,6 +291,8 @@ class MatrixPoolUsers(SQLModel, table=True):
     # Foreign Key to active matrixPool
     matrixPoolUid: Optional[uuid.UUID] = Field(default=None, foreign_key="matrix_pool.uid")
     matrixPool: Optional[MatrixPool] = Relationship(back_populates="users")
+    position: Optional[int] = Field(nullable=True, default=0)
+    name: Optional[str] = Field(nullable=True, default=None)
 
     userId: str
     referralsAdded: int = Field(default=1)
