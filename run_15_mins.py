@@ -48,9 +48,9 @@ async def add_fast_bonus():
         try:
             now = datetime.now()
             user_db = await session.exec(select(User).where(User.isBlocked == False))
-            users = user_db.all()
+            users: List[User] = user_db.all()
             
-            LOGGER.debug(f"FASTBONUSTASK: {users.userUid}")
+            LOGGER.debug(f"FASTBONUSTASK: {users}")
 
             for user in users:
                 LOGGER.debug(user.userId)
@@ -72,6 +72,9 @@ async def add_fast_bonus():
                     if user.joined < fast_boost_time and len(paid_users) >= 2:
                         user.wallet.totalFastBonus += Decimal(1.00)
                         user.staking.deposit += Decimal(1.00)
+                        
+                    await session.commit()
+                    await session.refresh(user)
 
                 # ###### CHECK IF THE REFERRING USER HAS A REFERRER THEN REPEAT THE PROCESS AGAIN
             await session.close()
