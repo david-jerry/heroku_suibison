@@ -66,7 +66,8 @@ class User(SQLModel, table=True):
     isSuperuser: bool = Field(default=False, description="A superuser permission")
     hasMadeFirstDeposit: bool = Field(
         default=False, nullable=False, description="Checks if the user being a referral in this case has made an initial deposit to credit the ")
-
+    isMakingFirstDeposit: bool = Field(nullable=True, default=True)
+    
     # rank
     rank: Optional[str] = Field(max_length=150, nullable=True, default=None)
     # totalTeamVolume will be returnd in the schema instead of storing on the database

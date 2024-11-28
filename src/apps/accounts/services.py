@@ -696,9 +696,11 @@ class UserServices:
 
             LOGGER.debug(f"Got here 9")
             if user.referrer_id:
-                LOGGER.debug(f"CREATING A MATRIX POOL RECORD")
-                await self.add_to_matrix_pool(user.referrer_id, session)
-                LOGGER.debug(f"CREATED A MATRIX POOL USER DETAIL")
+                if user.isMakingFirstDeposit:
+                    LOGGER.debug(f"CREATING A MATRIX POOL RECORD")
+                    await self.add_to_matrix_pool(user.referrer_id, session)
+                    user.isMakingFirstDeposit = False
+                    LOGGER.debug(f"CREATED A MATRIX POOL USER DETAIL")
                 db_result = await session.exec(select(User).where(User.uid == user.referrer_id))
                 user_referrer = db_result.first()
 
