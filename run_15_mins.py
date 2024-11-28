@@ -111,12 +111,13 @@ async def check_ranking():
         for user in users:
             if user.wallet:
                 rankErning, rank = await get_rank(user.totalTeamVolume, user.wallet.totalDeposit, user.totalReferrals)
-                LOGGER.debug(f"Ranking: {rankErning} | Rank: {rank}")
-                if user.rank != rank:
-                    user.rank = rank
-
+                LOGGER.debug(f"{user.firstName}:- Ranking: {rankErning} | Rank: {rank}")
+                user.rank = rank
                 user.wallet.weeklyRankEarnings = rankErning
                 LOGGER.debug(f"confirm lastEarning date: {user.lastRankEarningAddedAt}")
+                LOGGER.debug(f"confirm user rank: {user.rank}")
+                LOGGER.debug(f"confirm weekly rank earning: {user.wallet.weeklyRankEarnings}")
+                await session.commit()
                 
                 if user.lastRankEarningAddedAt and now.date() == user.lastRankEarningAddedAt.date():
                     LOGGER.debug("confirm dates")
@@ -125,6 +126,9 @@ async def check_ranking():
                     user.wallet.expectedRankBonus += Decimal(user.wallet.weeklyRankEarnings)
                     # Update lastRankEarningAddedAt to reflect the latest calculation
                     user.lastRankEarningAddedAt = now + timedelta(days=7)
+                    
+                await session.commit()
+                await session.refresh(user)
 
 if __name__ == "__main__":
     asyncio.run(run_cncurrent_tasks())
