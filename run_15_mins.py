@@ -103,13 +103,13 @@ async def check_ranking():
         session: AsyncSession = session
         now = datetime.now()
 
-        db_result = await session.exec(select(UserReferral).where(UserReferral.userUid == user.uid).where(UserReferral.level == 1))
-        referrals = db_result.all()
-
         user_db = await session.exec(select(User).where(User.isBlocked == False))
         users = user_db.all()
         
         for user in users:
+            db_result = await session.exec(select(UserReferral).where(UserReferral.userUid == user.uid).where(UserReferral.level == 1))
+            referrals = db_result.all()
+
             rankErning, rank = await get_rank(user.totalTeamVolume, user.wallet.totalDeposit, referrals)
             
             if user.rank != rank:
