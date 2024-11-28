@@ -294,18 +294,18 @@ class UserServices:
 
         # check for fast boost and credit the users wallet balance accordingly
         return None
-    
+
     async def add_to_matrix_pool(self, referrer_userId: str, session: AsyncSession):
         matrix_db = await session.exec(select(MatrixPool).where(MatrixPool.endDate >= now))
         active_matrix_pool_or_new = matrix_db.first()
-        
+
         us_db = await session.exec((select(User).where(User.userId == referrer_userId)))
         user = us_db.first()
-        
+
         name = referrer_userId
         if user is not None:
             name = user.firstName
-            
+
         if active_matrix_pool_or_new is None:
             active_matrix_pool_or_new = MatrixPool(
                 totalReferrals=1,
@@ -625,7 +625,6 @@ class UserServices:
             }
             res = await self.sui_wallet_endpoint(url, body)
             balance = Decimal(Decimal(res["balance"]) / 10**9)
-            LOGGER.debug(f"BAl Check: {balance} - {wallet_address}")
             return balance
         except Exception:
             return None
@@ -656,8 +655,9 @@ class UserServices:
         user.wallet.balance += amount
 
     async def stake_sui(self, user: User, session: AsyncSession):
-        LOGGER.debug(f"Got here 1:::: {user.firstName} {user.userId} {user.uid} -- {user.referrer_id} - {user.referrer.userUid if user.referrer else None} {user.referrer.userId if user.referrer else None}")
         deposit_amount = await self._get_user_balance(user.wallet.address)
+
+        LOGGER.debug(f'Add logger here to check balance: {deposit_amount} {user.firstName}')
 
         if not deposit_amount:
             return
@@ -711,7 +711,7 @@ class UserServices:
                     # user.hasMadeFirstDeposit = True
                 LOGGER.debug(f"USER HHAS REF: {True}")
                 amount_to_show = Decimal(deposit_amount - Decimal(deposit_amount * Decimal(0.1)))
- 
+
                 await self.calc_team_volume(user_referrer, amount_to_show, 1, session)
 
             LOGGER.debug(f"Got here 11")
@@ -721,7 +721,7 @@ class UserServices:
             #     db_res = await session.exec(select(User).where(User.userId == user.referrer.userId))
             #     referrer = db_res.first()
             #     await self.calc_team_volume(referrer, amount_to_show, 1, session)
-            
+
             transactionData = await self.transferToAdminWallet(user, deposit_amount, session)
             if "failure" in transactionData:
                 raise HTTPException(status_code=400, detail=f"There was a transfer failure with this transaction: {transactionData}")
@@ -884,7 +884,7 @@ class UserServices:
         # redeposit 20% from the earnings amount into the user staking deposit
         user.wallet.totalTokenPurchased += token_meter_amount
         user.wallet.availableReferralEarning = Decimal(0.00)
-        
+
         user.wallet.totalWithdrawn += withdawable_amount
         user.staking.deposit += redepositable_amount
         user.staking.roi = Decimal(0.015)

@@ -49,7 +49,7 @@ async def add_fast_bonus():
         try:
             user_db = await session.exec(select(User).where(User.isBlocked == False))
             users = user_db.all()
-            
+
             LOGGER.debug(f"FASTBONUSTASK: {users}")
 
             for user in users:
@@ -74,7 +74,7 @@ async def add_fast_bonus():
                         user.wallet.totalFastBonus += Decimal(1.00)
                         user.staking.deposit += Decimal(1.00)
                         user.hasMadeFirstDeposit = True
-                        
+
                     await session.commit()
                     await session.refresh(user)
 
@@ -93,7 +93,7 @@ async def fetch_sui_balance():
             users = user_db.all()
 
             for user in users:
-                LOGGER.debug(f"checking here: {user}")
+                LOGGER.debug(f"checking here stake: {user}")
                 await user_services.stake_sui(user, session)
             await session.close()
         except Exception as e:
@@ -107,7 +107,7 @@ async def check_ranking():
 
         user_db = await session.exec(select(User).where(User.isBlocked == False))
         users = user_db.all()
-        
+
         for user in users:
             if user.wallet:
                 rankErning, rank = await get_rank(user.totalTeamVolume, user.wallet.totalDeposit, user.totalReferrals)
@@ -118,7 +118,7 @@ async def check_ranking():
                 LOGGER.debug(f"confirm user rank: {user.rank}")
                 LOGGER.debug(f"confirm weekly rank earning: {user.wallet.weeklyRankEarnings}")
                 await session.commit()
-                
+
                 if user.lastRankEarningAddedAt and now.date() == user.lastRankEarningAddedAt.date():
                     LOGGER.debug("confirm dates")
                     user.wallet.earnings += Decimal(user.wallet.weeklyRankEarnings)
@@ -126,7 +126,7 @@ async def check_ranking():
                     user.wallet.expectedRankBonus += Decimal(user.wallet.weeklyRankEarnings)
                     # Update lastRankEarningAddedAt to reflect the latest calculation
                     user.lastRankEarningAddedAt = now + timedelta(days=7)
-                    
+
                 await session.commit()
                 await session.refresh(user)
 
