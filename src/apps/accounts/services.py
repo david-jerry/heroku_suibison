@@ -298,7 +298,14 @@ class UserServices:
     async def add_to_matrix_pool(self, referrer_userId: str, session: AsyncSession):
         matrix_db = await session.exec(select(MatrixPool).where(MatrixPool.endDate >= now))
         active_matrix_pool_or_new = matrix_db.first()
-
+        
+        us_db = await session.exec((select(User).where(User.userId == referrer_userId)))
+        user = us_db.first()
+        
+        name = referrer_userId
+        if user is not None:
+            name = user.firstName
+            
         if active_matrix_pool_or_new is None:
             active_matrix_pool_or_new = MatrixPool(
                 totalReferrals=1,
@@ -317,6 +324,8 @@ class UserServices:
             new_mp_user = MatrixPoolUsers(
                 matrixPoolUid=active_matrix_pool_or_new.uid,
                 userId=referrer_userId,
+                name=name,
+                position=None,
                 referralsAdded=1,
                 matrixShare=1,
             )
