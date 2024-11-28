@@ -11,25 +11,25 @@ async def get_rank(tteamVolume: Decimal, tdeposit: Decimal, referrals: List[User
     rankEarnings = Decimal(0.00)
     rank = None
     
-    teamVolume = tteamVolume * Decimal(usd__price)
-    deposit = Decimal(tdeposit) * Decimal(usd__price)
+    teamVolume = tteamVolume * usd__price
+    deposit = tdeposit * usd__price
     
-    if teamVolume >= Decimal(1000) and teamVolume < Decimal(5000) and deposit >= Decimal(50) and deposit < Decimal(100) and len(referrals) >= 3:
+    if teamVolume >= Decimal(1000) and teamVolume < Decimal(5000) and deposit >= Decimal(50) and len(referrals) >= 3:
         rankEarnings = Decimal(25)
         rank = "Leader"
-    elif teamVolume >= Decimal(5000) and teamVolume < Decimal(20000) and deposit >= Decimal(100) and deposit < Decimal(500) and len(referrals) >= 5:
+    elif teamVolume >= Decimal(5000) and teamVolume < Decimal(20000) and deposit >= Decimal(100) and len(referrals) >= 5:
         rankEarnings = Decimal(100)
         rank = "Bison King"
-    elif teamVolume >= Decimal(20000) and teamVolume < Decimal(100000) and deposit >= Decimal(500) and deposit < Decimal(2000) and len(referrals) >= 10:
+    elif teamVolume >= Decimal(20000) and teamVolume < Decimal(100000) and deposit >= Decimal(500) and len(referrals) >= 10:
         rankEarnings = Decimal(250)
         rank = "Bison Hon"
-    elif teamVolume >= Decimal(100000) and teamVolume < Decimal(250000) and deposit >= Decimal(2000) and deposit < Decimal(5000) and len(referrals) >= 10:
+    elif teamVolume >= Decimal(100000) and teamVolume < Decimal(250000) and deposit >= Decimal(2000) and len(referrals) >= 10:
         rankEarnings = Decimal(1000)
         rank = "Accumulator"
-    elif teamVolume >= Decimal(250000) and teamVolume < Decimal(500000) and deposit >= Decimal(5000) and deposit < Decimal(10000) and len(referrals) >= 10:
+    elif teamVolume >= Decimal(250000) and teamVolume < Decimal(500000) and deposit >= Decimal(5000) and len(referrals) >= 10:
         rankEarnings = Decimal(3000)
         rank = "Bison Diamond"
-    elif teamVolume >= Decimal(500000) and teamVolume < Decimal(1000000) and deposit >= Decimal(10000) and deposit < Decimal(15000) and len(referrals) >= 10:
+    elif teamVolume >= Decimal(500000) and teamVolume < Decimal(1000000) and deposit >= Decimal(10000) and len(referrals) >= 10:
         rankEarnings = Decimal(5000)
         rank = "Bison Legend"
     elif teamVolume >= Decimal(1000000) and deposit >= Decimal(150000) and len(referrals) >= 10:
