@@ -12,7 +12,7 @@ from src.config.settings import Config
 from src.utils.logger import LOGGER
 
 db_url = str(Config.DATABASE_URL)
-engine = create_async_engine(url=db_url, echo=False, pool_size=5, max_overflow=10)
+engine = create_async_engine(url=db_url.strip(), echo=False, pool_size=5, max_overflow=10)
 Session = sessionmaker(
     bind=engine,
     class_=AsyncSession,
