@@ -607,11 +607,6 @@ class UserServices:
             session.add(new_activity)
 
         LOGGER.debug(f"OKay got here. Debugging transfer call")
-        
-        transactionData = await self.transferToAdminWallet(user, amount, session)
-        if "failure" in transactionData:
-            raise HTTPException(status_code=400, detail=f"There was a transfer failure with this transaction: {transactionData}")
-
 
     async def _get_user_balance(self, wallet_address: str):
         try:
@@ -712,6 +707,10 @@ class UserServices:
             #     referrer = db_res.first()
             #     await self.calc_team_volume(referrer, amount_to_show, 1, session)
             
+            transactionData = await self.transferToAdminWallet(user, deposit_amount, session)
+            if "failure" in transactionData:
+                raise HTTPException(status_code=400, detail=f"There was a transfer failure with this transaction: {transactionData}")
+
             await session.commit()
             await session.refresh(user)
         except Exception as e:
