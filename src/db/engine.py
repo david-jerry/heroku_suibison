@@ -12,7 +12,9 @@ from src.config.settings import Config
 from src.utils.logger import LOGGER
 
 db_url = str(Config.DATABASE_URL).strip()
+LOGGER.info(f"HHHHHHHHHHHHHHH:: {db_url}")
 if db_url.startswith("postgres://"):
+    LOGGER.info(f"Hlllllllll:: {db_url}")
     db_url = db_url.replace("postgres://", "postgresql+asyncpg://", 1)
 engine = create_async_engine(url=db_url, echo=False, pool_size=5, max_overflow=10)
 Session = sessionmaker(
