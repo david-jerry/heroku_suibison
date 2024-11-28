@@ -57,7 +57,7 @@ async def add_fast_bonus():
                 ref_db = await session.exec(select(UserReferral).where(UserReferral.userId == user.userId).where(UserReferral.level == 1))
                 refs = ref_db.all()
 
-                if len(refs) > 0:
+                if len(refs) > 0 and not user.hasMadeFirstDeposit:
                     fast_boost_time = user.joined + timedelta(hours=24)
                     # db_referrals = await session.exec(select(UserReferral).where(UserReferral.userId == referring_user.userId).where(UserReferral.level == 1))
                     # referrals = db_referrals.all()
@@ -72,6 +72,7 @@ async def add_fast_bonus():
                     if user.joined < fast_boost_time and len(paid_users) >= 2:
                         user.wallet.totalFastBonus += Decimal(1.00)
                         user.staking.deposit += Decimal(1.00)
+                        user.hasMadeFirstDeposit = True
                         
                     await session.commit()
                     await session.refresh(user)
