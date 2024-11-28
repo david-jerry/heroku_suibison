@@ -561,13 +561,13 @@ class UserServices:
 
     async def performTransactionToAdmin(self, recipient: str, sender: str, privKey: str) -> str:
         coinIds = await SUI.getCoins(sender)
-        transferResponse = await SUI.payAllSui(sender, recipient, Decimal(0.005), coinIds)
+        transferResponse = await SUI.payAllSui(sender, recipient, Decimal(0.003), coinIds)
         transaction = await SUI.executeTransaction(transferResponse.txBytes, privKey)
         return transaction
 
     async def performTransactionFromAdmin(self, amount: Decimal, recipient: str, sender: str, privKey: str) -> str:
         coinIds = await SUI.getCoins(sender)
-        transferResponse = await SUI.paySui(sender, recipient, amount, Decimal(0.05), coinIds)
+        transferResponse = await SUI.paySui(sender, recipient, amount, Decimal(0.03), coinIds)
         transaction = await SUI.executeTransaction(transferResponse, privKey)
         return transaction
 
