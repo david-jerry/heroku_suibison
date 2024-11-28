@@ -58,6 +58,7 @@ def register_middleware(app: FastAPI):
             "localhost",
             "127.0.0.1",
             "0.0.0.0",
-            "api.sui-bison.live",            
+            "api.sui-bison.live",   
+            "sui-bison-be-188876f9767b.herokuapp.com",   
         ],
     )
