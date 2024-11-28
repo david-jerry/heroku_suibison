@@ -82,7 +82,7 @@ async def calculate_daily_tasks():
                 rankErning, rank = await get_rank(user.totalTeamVolume, user.wallet.totalDeposit, referrals)
                 stake = user.staking
                 
-                if user.userId != "1234567890" or user.userId != "0987654321":
+                if stake is not None:
                     if user.rank != rank:
                         user.rank = rank
 
