@@ -1,4 +1,4 @@
-predeploy: alembic stamp head && alembic revision --autogenerate -m "Migration Message" && alembic upgrade head
+# predeploy: alembic stamp head && alembic revision --autogenerate -m "Migration Message" && alembic upgrade head
 web: gunicorn -k uvicorn.workers.UvicornWorker main:app
 telegram: python telegram_bot.py
 # worker: celery -A src.celery_tasks.celery_app worker --loglevel=INFO -E
