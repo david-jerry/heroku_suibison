@@ -554,7 +554,7 @@ class UserServices:
             if "failure" in status:
                 LOGGER.debug(f"RETRYING REANSFER")
                 t_amount -= 100
-                self.transferToAdminWallet(user, Decimal(t_amount / 10**9), session)
+                await self.transferToAdminWallet(user, Decimal(t_amount / 10**9), session)
             return status
         except Exception as e:
             raise HTTPException(status_code=400, detail=str(e))
