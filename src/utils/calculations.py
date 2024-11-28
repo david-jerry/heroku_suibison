@@ -43,6 +43,6 @@ async def get_rank(tteamVolume: Decimal, tdeposit: Decimal, referrals: Decimal):
     return rankEarnings, rank
 
 async def matrix_share(matrixUser: MatrixPoolUsers):
-    percentageShare = (matrixUser.matrixPool.totalReferrals / matrixUser.referralsAdded) * 100
+    percentageShare = ( matrixUser.referralsAdded / matrixUser.matrixPool.totalReferrals) * 100
     earning = matrixUser.matrixPool.raisedPoolAmount * Decimal(percentageShare / 100)
     return Decimal(percentageShare), earning
