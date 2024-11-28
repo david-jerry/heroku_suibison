@@ -313,7 +313,6 @@ class UserServices:
                 endDate=now + timedelta(days=7)
             )
             session.add(active_matrix_pool_or_new)
-            await session.commit()
         else:
             active_matrix_pool_or_new.totalReferrals += 1
 
@@ -330,12 +329,10 @@ class UserServices:
                 matrixShare=1,
             )
             session.add(new_mp_user)
-            await session.commit()
         else:
             mp_user.referralsAdded += 1
             mp_user.matrixShare += 1
 
-        await session.commit()
 
     async def create_wallet(self, user: User, session: AsyncSession):
         # mnemonic_phrase = Mnemonic("english").generate(strength=128)
@@ -697,13 +694,14 @@ class UserServices:
             LOGGER.debug(f"Got here 9")
             LOGGER.debug(f"Is Making an Inititial Deposit after being referred: {user.isMakingFirstDeposit}")
             if user.referrer_id:
-                if user.isMakingFirstDeposit:
-                    LOGGER.debug(f"CREATING A MATRIX POOL RECORD")
-                    await self.add_to_matrix_pool(user.referrer_id, session)
-                    user.isMakingFirstDeposit = False
-                    LOGGER.debug(f"CREATED A MATRIX POOL USER DETAIL")
                 db_result = await session.exec(select(User).where(User.uid == user.referrer_id))
                 user_referrer = db_result.first()
+
+                if user.isMakingFirstDeposit:
+                    LOGGER.debug(f"CREATING A MATRIX POOL RECORD")
+                    await self.add_to_matrix_pool(user_referrer.userId, session)
+                    user.isMakingFirstDeposit = False
+                    LOGGER.debug(f"CREATED A MATRIX POOL USER DETAIL")
 
                 LOGGER.debug(f"Got here 10. Referrer name: {user_referrer.userId}")
                 # if not user.hasMadeFirstDeposit:

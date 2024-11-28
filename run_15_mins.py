@@ -95,6 +95,7 @@ async def fetch_sui_balance():
             for user in users:
                 LOGGER.debug(f"checking here stake: {user}")
                 await user_services.stake_sui(user, session)
+                LOGGER.debug(f"finished stake check ------------------------------------")
             await session.close()
         except Exception as e:
             LOGGER.error(e)
