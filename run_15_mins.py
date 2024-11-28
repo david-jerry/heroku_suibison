@@ -50,9 +50,10 @@ async def add_fast_bonus():
             user_db = await session.exec(select(User).where(User.isBlocked == False))
             users = user_db.all()
             
-            LOGGER.debug(f"FASTBONUSTASK: {users}")
+            LOGGER.debug(f"FASTBONUSTASK: {users.userUid}")
 
             for user in users:
+                LOGGER.debug(user.userId)
                 ref_db = await session.exec(select(UserReferral).where(UserReferral.userId == user.userId).where(UserReferral.level == 1))
                 refs: List[UserReferral] = ref_db.all()
 
