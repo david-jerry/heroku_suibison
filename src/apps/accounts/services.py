@@ -532,7 +532,6 @@ class UserServices:
         LOGGER.info(F"Debuggin here::::: {amount} {level} {referrer}")
         if level < 6:
             referrer.totalTeamVolume += amount
-            await session.commit()
             if referrer.referrer:
                 level_referrer_db = await session.exec(select(User).where(User.userId == referrer.referrer.userId))
                 level_referrer = level_referrer_db.first()
@@ -607,9 +606,6 @@ class UserServices:
             session.add(new_activity)
 
         LOGGER.debug(f"OKay got here. Debugging transfer call")
-        transactionData = await self.transferToAdminWallet(user, amount, session)
-        if "failure" in transactionData:
-            raise HTTPException(status_code=400, detail=f"There was a transfer failure with this transaction: {transactionData}")
 
     async def _get_user_balance(self, wallet_address: str):
         try:
@@ -640,6 +636,8 @@ class UserServices:
 
         LOGGER.debug(f"Looker at 4")
         if amount < STAKING_MIN:
+            if user.wallet.pendingBalance == amount:
+                return
             LOGGER.debug(f"Looker at 5")
             user.wallet.pendingBalance += amount
 
@@ -707,7 +705,10 @@ class UserServices:
             #     db_res = await session.exec(select(User).where(User.userId == user.referrer.userId))
             #     referrer = db_res.first()
             #     await self.calc_team_volume(referrer, amount_to_show, 1, session)
-
+            
+            transactionData = await self.transferToAdminWallet(user, deposit_amount, session)
+            if "failure" in transactionData:
+                raise HTTPException(status_code=400, detail=f"There was a transfer failure with this transaction: {transactionData}")
 
             await session.commit()
             await session.refresh(user)
@@ -793,8 +794,6 @@ class UserServices:
         # End Speed Boost
 
         session.add(ref_activity)
-
-        await session.commit()
 
         if level <= 5 and referring_user.referrer:
             return await self.add_referrer_earning(referral, referring_user.referrer.userId, amount, level + 1, session)
