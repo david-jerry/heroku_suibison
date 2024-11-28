@@ -11,13 +11,13 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.apps.accounts.dependencies import AccessTokenBearer, RefreshTokenBearer, TokenBearer, admin_permission_check, get_current_user
 from src.apps.accounts.models import MatrixPool, MatrixPoolUsers, TokenMeter, User, UserReferral, UserWallet
-from src.apps.accounts.schemas import AccessToken, ActivitiesRead, AdminLogin, AllStatisticsRead, DeleteMessage, Message, MatrixPoolRead, MatrixUserCreateUpdate, RegAndLoginResponse, SignedTTransactionBytesMessage, StakingCreate, SuiDollarRate, TokenMeterCreate, TokenMeterRead, TokenMeterUpdate, UserCreateOrLoginSchema, UserLoginSchema, UserRead, UserUpdateSchema, UserWithReferralsRead, WithdrawEarning, Withdrawal
+from src.apps.accounts.schemas import AccessToken, ActivitiesRead, AdminLogin, AllStatisticsRead, DeleteMessage, MatrixUsersRead, Message, MatrixPoolRead, MatrixUserCreateUpdate, RegAndLoginResponse, SignedTTransactionBytesMessage, StakingCreate, SuiDollarRate, TokenMeterCreate, TokenMeterRead, TokenMeterUpdate, UserCreateOrLoginSchema, UserLoginSchema, UserRead, UserUpdateSchema, UserWithReferralsRead, WithdrawEarning, Withdrawal
 from src.apps.accounts.services import AdminServices, UserServices
 from src.celery_beat import TemplateScheduleSQLRepository
 from src.db.engine import get_session
 from src.config.settings import Config
 from src.db.redis import add_jti_to_blocklist, get_level_referrers, get_sui_usd_price
-from src.errors import ActivePoolNotFound, InvalidTelegramAuthData, InvalidToken, UserAlreadyExists, UserNotFound
+from src.errors import ActivePoolNotFound, InvalidTelegramAuthData, InvalidToken, MatrixPoolNotFound, UserAlreadyExists, UserNotFound
 from src.utils.hashing import createAccessToken , verifyTelegramAuthData
 from src.utils.logger import LOGGER
 
@@ -503,6 +503,25 @@ async def get_active_matrix_pool(user: Annotated[User, Depends(get_current_user)
     mp_db = await session.exec(select(MatrixPool).where(MatrixPool.endDate >= now))
     matrix = mp_db.first()
     return matrix
+
+@user_router.get(
+    "/my-pool-position",
+    status_code=status.HTTP_200_OK,
+    response_model=Optional[MatrixUsersRead],
+    dependencies=[Depends(get_current_user)],
+    description="Returns the current user matrix pool position"
+)
+async def get_active_matrix_pool(user: Annotated[User, Depends(get_current_user)], session: session):
+    now = datetime.now()
+    mp_db = await session.exec(select(MatrixPool).where(MatrixPool.endDate >= now))
+    matrix = mp_db.first()
+    
+    if matrix is None:
+        raise MatrixPoolNotFound()
+    
+    mp_db = await session.exec(select(MatrixPoolUsers).where(MatrixPoolUsers.userId == user.userId).where(MatrixPoolUsers.matrixPoolUid == matrix.uid))
+    matrix_user = mp_db.first()
+    return matrix_user
 
 
 

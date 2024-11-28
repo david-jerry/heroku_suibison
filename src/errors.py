@@ -20,6 +20,11 @@ class InvalidToken(SuiBisonException):
     pass
 
 
+class MatrixPoolNotFound(SuiBisonException):
+    """Matrix pool not found"""
+    pass
+
+
 class IncorrectScheduleDuration(SuiBisonException):
     """Incorrect scheduling value"""
     pass
@@ -228,6 +233,14 @@ def register_all_errors(app: FastAPI):
             status_code=status.HTTP_401_UNAUTHORIZED,
             content={"message": "Telegram auth string used for the wrong userId.",
                      "error_code": "invalid_telegram_auth_string"}
+        )
+        
+    @app.exception_handler(MatrixPoolNotFound)
+    async def MatrixPoolNotFoundError(request: Request, exc: MatrixPoolNotFound):
+        return JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content={"message": "This matrix pool is not found.",
+                     "error_code": "MatrixPoolNotFound"}
         )
 
     @app.exception_handler(StakingExpired)
