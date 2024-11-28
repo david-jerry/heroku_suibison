@@ -42,20 +42,35 @@ async def calculate_users_matrix_pool_share():
             # ###### CALCULATE USERS SHARE TO AN ACTIVE POOL
             matrix_db = await session.exec(select(MatrixPool).where(MatrixPool.endDate >= now))
             active_matrix_pool_or_new = matrix_db.first()
-
+            
+                
             if active_matrix_pool_or_new:
                 payoutTime = active_matrix_pool_or_new.endDate + timedelta(minutes=30)
                 mp_users_db = await session.exec(select(MatrixPoolUsers).where(MatrixPoolUsers.matrixPoolUid == active_matrix_pool_or_new.uid))
                 mp_users = mp_users_db.all()
 
                 for mp_user in mp_users:
+                    p_db = await session.exec(select(MatrixPoolUsers).where(MatrixPoolUsers.matrixPoolUid == mp_user.matrixPoolUid).order_by(MatrixPoolUsers.referralsAdded))
+                    positions = p_db.all()
+
+                    for p in positions:
+                        p.position += 1
+                        
+                    mpu_db = await session.exec(select(User).where(User.userId == mp_user.userId))
+                    mpu: Optional[User] = mpu_db.first()
+                    name = mp_user.userId
+                    if mpu.firstName:
+                        name = mpu.firstName
+                    elif mpu.lastName:
+                        name = mpu.lastName
+                        
+                    if mp_user.name is None:
+                        mp_user.name = name
+                        
                     percentage, earning = await matrix_share(mp_user)
                     # mp_user.matrixShare = percentage
                     mp_user.matrixEarninig = earning
                     if active_matrix_pool_or_new.endDate <= payoutTime:
-                        mpu_db = await session.exec(select(User).where(User.userId == mp_user.userId))
-                        mpu: Optional[User] = mpu_db.first()
-
                         mpu.wallet.earnings += earning
                         mpu.wallet.availableReferralEarning += earning
                         mpu.wallet.totalReferralEarnings += earning
