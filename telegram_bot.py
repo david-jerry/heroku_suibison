@@ -45,7 +45,7 @@ async def start(update: Update, context: CallbackContext):
             await update.message.reply_text(f"This must be a valid user id or none")
 
         # Define the endpoint URL
-        url = f"{Config.DOMAIN}/v1/auth/start?referrer={startapp_param}"
+        url = f"{Config.DOMAIN}/v2/auth/start?referrer={startapp_param}"
 
         LOGGER.debug(f"START URL: {url}")
         LOGGER.debug(f"STARTPARAM: {startapp_param}")
@@ -76,7 +76,7 @@ async def start(update: Update, context: CallbackContext):
         else:
             await update.message.reply_text(f"Hello {username}, \n<strong>Registration Failed</strong>", parse_mode=ParseMode.HTML)
     else:
-        url = f"{Config.DOMAIN}/v1/auth/start"
+        url = f"{Config.DOMAIN}/v2/auth/start"
         LOGGER.debug(f"START URL: {url}")
 
         # Define the request headers
