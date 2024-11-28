@@ -1,15 +1,21 @@
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 import uuid
 from fastapi import Request
 from passlib.context import CryptContext
-from src.apps.accounts.dependencies import get_ip_address, get_location
-from src.apps.accounts.models import KnownIps, User, VerifiedEmail
-from src.db.db import get_session
+from sqlmodel import select
+from src.apps.accounts.enum import ActivityType
+from src.apps.accounts.models import Activities, User
+from src.apps.accounts.services import UserServices
+from src.db.engine import get_session
+from src.errors import ReferrerNotFound
+from src.utils.hashing import createAccessToken
 from src.utils.logger import LOGGER
 
 # Password hashing setup
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+user_services = UserServices()
 
 # Function to get user input asynchronously
 async def get_input(prompt: str) -> str:
@@ -22,18 +28,17 @@ async def hash_password(password: str) -> str:
 async def create_superuser():
     async for session in get_session():
         # Get user input asynchronously
-        email = await get_input("Enter email for superuser: ")
+        userId = await get_input("Enter userId for superuser: ")
         password = await get_input("Enter password for superuser: ")
-        ip = await get_input("Enter your IP: ")
 
         # Check if user already exists
-        result = await session.execute(
-            select(User).where(User.email == email)
+        result = await session.exec(
+            select(User).where(User.userId == userId)
         )
         existing_user = result.first()
 
         if existing_user:
-            LOGGER.info(f"User with email {email} already exists.")
+            LOGGER.info(f"User with userId {userId} already exists.")
             return
 
         # Hash password asynchronously
@@ -42,45 +47,32 @@ async def create_superuser():
         # Create superuser
         superuser = User(
             uid=uuid.uuid4(),
-            email=email,
+            userId=userId,
             passwordHash=hashed_password,
             isSuperuser=True,
-            isCompany=True,
+            isAdmin=True,
         )
-
-        location= await get_location(ip)
-        superuser.country = location.country
-        superuser.countryCode = location.country_code
-        superuser.countryCallingCode = location.country_calling_code
-        superuser.inEu = location.in_eu
-        superuser.currency = location.currency
-
 
         session.add(superuser)
+        
+        stake = await user_services.create_staking_account(superuser, session)
+        LOGGER.debug(f"Stake:: {stake}")
+        # Create an activity record for this new user
+        new_activity = Activities(activityType=ActivityType.WELCOME, strDetail="Welcome to SUI-Bison", userUid=superuser.uid)
+        session.add(new_activity)
+        
+        new_wallet = await user_services.create_wallet(superuser, session)
+        LOGGER.debug(f"NEW WALLET:: {new_wallet}")
+        
+        try:
+            await user_services.create_referrer("6773082668", superuser, session)
+            LOGGER.debug("Created Referral")
+        except ReferrerNotFound:
+            pass
+        # generate access and refresh token so long the telegram init data is valid
         await session.commit()
-
-        verified_email = VerifiedEmail(
-            uid=uuid.uuid4(),
-            user=superuser,
-            userUid=superuser.uid,
-            email=email,
-            verifiedAt=datetime.utcnow()
-        )
-
-        session.add(verified_email)
-        await session.commit()
-
-        new_ip = KnownIps(
-            uid=uuid.uuid4(),
-            user=superuser,
-            userUid=superuser.uid,
-            ip=ip,
-        )
-        session.add(new_ip)
-        await session.commit()
-
-
-        LOGGER.info(f"Superuser {email} created successfully.")
+        await session.refresh(superuser)
+        LOGGER.info(f"Superuser {userId} created successfully.")
 
 if __name__ == "__main__":
     asyncio.run(create_superuser())

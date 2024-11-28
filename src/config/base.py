@@ -7,13 +7,14 @@ BASE_URL = Path(__file__).resolve().parent.parent.parent
 class BaseConfig(BaseSettings):
     ENVIRONMENT: str
     SECRET_KEY: str
+    WEBAPP_URL: str
     ALGORITHM: Optional[str] = "HS256"
     BASE_DIR: Optional[Path] = BASE_URL
     TELEGRAM_TOKEN: str
-    TELEGRAM_LINK: str
     APP_DIR: Optional[Path] = BASE_DIR / 'src/apps'
     VERSION: Optional[str] = "v1"
     ACCESS_TOKEN_EXPIRY: Optional[int] = 1800
+    DOMAIN: str
 
     model_config = SettingsConfigDict(
         env_file=".env",

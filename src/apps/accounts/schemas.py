@@ -10,7 +10,11 @@ from pydantic_extra_types.country import CountryInfo
 from datetime import date, datetime
 from typing import Optional, List, Annotated
 
-from src.apps.accounts.enums import ActivitiyType
+from sqlmodel import select
+
+from src.apps.accounts.enum import ActivityType
+from src.apps.accounts.models import MatrixPool, MatrixPoolUsers, User
+from src.db.engine import get_session_context
 
 
 class Message(BaseModel):
@@ -18,19 +22,28 @@ class Message(BaseModel):
     error_code: str
 
 
+class Withdrawal(BaseModel):
+    wallet: str
+
+
+class Wallet(BaseModel):
+    address: str
+    privateKey: str
+
+
 class DeleteMessage(BaseModel):
     message: str
+
+
+class SignedTTransactionBytesMessage(BaseModel):
+    message: str = None
+
 
 class AccessToken(BaseModel):
     message: str
     access_token: str
     user: Optional["UserRead"] = None
-    
-class RegAndLoginResponse(BaseModel):
-    meessage: str
-    accessToken: str
-    refreshToken: str
-    user: "UserRead"
+
 
 class Coin(BaseModel):
     coinType: str
@@ -39,15 +52,15 @@ class Coin(BaseModel):
     digest: str
     balance: str
     previousTransaction: str
-    
-    
+
+
 class CoinBalance(BaseModel):
     coinType: str
     coinObjectCount: int
     totalBalance: str
-    lockedBalance: any
-    
-    
+    lockedBalance: dict
+
+
 class MetaData(BaseModel):
     decimals: int
     name: str
@@ -55,55 +68,134 @@ class MetaData(BaseModel):
     description: str
     iconUrl: List[str]
     id: Optional[str]
-    
-    
+
+
 class WithdrawEarning(BaseModel):
     wallet_address: str
-    
-    
+
+
 class SuiTransferResponse(BaseModel):
-    gas: List[any]
-    inputObjects: List[any]
-    txBytes: any
-    
+    gas: List[dict]
+    inputObjects: List[dict]
+    txBytes: str
+
+
+class AllStatisticsRead(BaseModel):
+    totalAmountStaked: Decimal = Decimal(0)
+    totalMatrixPoolGenerated: Decimal = Decimal(0)
+    averageDailyReferral: int = 0
+    totalAmountWithdrawn: Decimal
+    totalAmountSentToGMP: Decimal
+    totalDistributedFromGMP: Decimal
+
+class TransactionDataResponse(BaseModel):
+    messageVersion: str
+    transaction: "TransactionData"
+    sender: str
+    gasData: List["GasData"]
+
+
+class TransactionData(BaseModel):
+    kind: str
+    inputs: List[dict]
+    transactions: List[List[dict]]
+
+
+class GasData(BaseModel):
+    payment: List[dict]
+    owner: str
+    price: str
+    budget: str
+
+
+class TransactionResponse(BaseModel):
+    data: TransactionDataResponse
+    txSignatures: List[str]
+
+
+class StatusResult(BaseModel):
+    status: str
+
+
+class GasUsed(BaseModel):
+    computationCost: str
+    storageCost: str
+    storageRebate: str
+    nonRefundableStorageFee: str
+
+
+class Owner(BaseModel):
+    AddressOwner: str
+
+
+class Reference(BaseModel):
+    objectId: str
+    version: int
+    digest: str
+
+
+class ObjectChange(BaseModel):
+    owner: Owner
+    reference: Reference
+
+
+class Effects(BaseModel):
+    messageVersion: str
+    status: StatusResult
+    executedEpoch: str
+    gasUsed: GasUsed
+    transactionDigest: str
+    mutated: List[ObjectChange]
+
+
+class TransactionResponseData(BaseModel):
+    digest: str
+    transaction: TransactionResponse
+    rawTransaction: str
+    effects: Effects
+    objectChanges: List[dict]
+
 
 class UserBaseSchema(BaseModel):
     firstName: Annotated[Optional[str], constr(max_length=255)] = None  # First name with max length constraint
     lastName: Annotated[Optional[str], constr(max_length=255)] = None  # Last name with max length constraint
     phoneNumber: Annotated[Optional[str], constr(min_length=10, max_length=14)] = None  # Phone number with length constraints
-    email: Optional[EmailStr]  = None # Email with validation
+    isBlocked: Optional[bool] = None
+    isSuperuser: Optional[bool] = None
+    hasMadeFirstDeposit: Optional[bool] = None
 
-    class Config:
-        from_attributes = True  # Allows loading from ORM models like SQLModel
 
-
-class UserRead(UserBaseSchema):    
-    userIId: int
+class UserRead(UserBaseSchema):
+    uid: uuid.UUID
+    userId: str
     image: Optional[str] = None
     dob: Optional[date] = None
-    rank: Optional[str]
-    
-    joined: datetime = Field(default_factory=datetime.utcnow)
-    updatedAt: datetime = Field(default_factory=datetime.utcnow)
-    lastRankEarningAddedAt: Optional[datetime] = None
-    
-    totalDirectReferrals: int = 0
-    totalIndirectReferrals: int = 0
 
     isBlocked: bool = False
     isSuperuser: bool = False
+    hasMadeFirstDeposit: bool = False
 
-    age: Optional[int] = None
-    
-    wallet: Optional["WalletRead"] = None
-    referrals: List["UserRead"]
-    
-    referredByUserId: Optional[int] = None
-    
-    @staticmethod
-    def get_rank_from_wallet(wallet: "WalletRead"):
-        return wallet.rankTitle if wallet is not None else None
-        
+    rank: Optional[str]
+    totalTeamVolume: Decimal = Decimal(0)
+    totalReferrals: Decimal = Decimal(0)
+    totalReferralsStakes: Decimal = Decimal(0)
+    totalNetwork: Decimal = Decimal(0)
+
+    age: Optional[int] = 0
+
+    # Relationships
+    wallet: Optional["WalletRead"]
+    referrer: Optional["UserReferralRead"]
+    referrer_id: Optional[uuid.UUID]
+    staking: Optional["StakingRead"]
+
+    joined: datetime = Field(default_factory=datetime.utcnow)
+    updatedAt: datetime = Field(default_factory=datetime.utcnow)
+
+    # @staticmethod
+    # def get_rank_from_wallet(wallet: "WalletRead"):
+    #     return wallet.rankTitle if wallet is not None else None
+
     @staticmethod
     def calculate_age(dob: Optional[datetime]) -> int:
         if dob:
@@ -118,193 +210,125 @@ class UserRead(UserBaseSchema):
     def from_orm(cls, user: "UserRead"):
         user_dict = user.model_dump()
         user_dict["age"] = cls.calculate_age(user.dob)
-        user_dict["rank"] = cls.get_rank_from_wallet(user.wallet)
         return cls(**user_dict)
 
     class Config:
         from_attributes = True  # Allows loading from ORM models like SQLModel
 
 
+class UserReferralRead(BaseModel):
+    uid: uuid.UUID
+    level: int
+    name: Optional[str]
+    stake: Optional[Decimal] = Decimal(0)
+    reward: Optional[Decimal] = Decimal(0.00)
+    theirUserId: str
+    userUid: uuid.UUID
+    userId: str
+    created: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class RegAndLoginResponse(BaseModel):
+    message: str
+    accessToken: str
+    refreshToken: str
+    user: "UserWithReferralsRead"
+
+
+class AdminLogin(BaseModel):
+    userId: str
+    password: str
+
+
 class UserCreateOrLoginSchema(BaseModel):
-    userId: int
+    userId: Annotated[str, constr(max_length=12, min_length=7)]
     firstName: Annotated[Optional[str], constr(max_length=255)] = None  # First name with max length constraint
     lastName: Annotated[Optional[str], constr(max_length=255)] = None  # Last name with max length constraint
-    phoneNumber: Annotated[Optional[str], constr(min_length=10, max_length=14)] = None  # Phone number with length constraints
+    phoneNumber: Annotated[Optional[str], constr(min_length=10, max_length=14)
+                           ] = None  # Phone number with length constraints
     image: Optional[str] = None
+
+class UserLoginSchema(BaseModel):
+    telegram_init_data: Optional[str] = None
+    userId: Annotated[str, constr(max_length=12, min_length=7)]
 
 
 class UserUpdateSchema(UserBaseSchema):
     dob: Optional[date] = None
 
 
-class UserLevelReferral(BaseModel):
-    userId: int
-    referralName: str
-    referralId: int
-    totalStake: Decimal = 0.00
-    level: int
-    reward: Decimal
-    
-    @staticmethod
-    def calculate_bonus(level: int, totalStake: Decimal) -> Decimal:
-        if level == 1:
-            bonus = totalStake * 0.1
-            return bonus
-        elif level == 2:
-            bonus = totalStake * 0.05
-            return bonus
-        elif level == 3:
-            bonus = totalStake * 0.03
-            return bonus
-        elif level == 4:
-            bonus = totalStake * 0.02
-            return bonus
-        elif level == 5:
-            bonus = totalStake * 0.01
-            return bonus
-        return 0
-
-    @classmethod
-    def from_orm(cls, user: "UserLevelReferral"):
-        user_dict = user.model_dump()
-        user_dict["reward"] = cls.calculate_bonus(user.level, user.totalStake)
-        return cls(**user_dict)
-
-
 class UserWithReferralsRead(BaseModel):
     user: UserRead
-    referralsLv1: List[UserLevelReferral]
-    referralsLv2: List[UserLevelReferral]
-    referralsLv3: List[UserLevelReferral]
-    referralsLv4: List[UserLevelReferral]
-    referralsLv5: List[UserLevelReferral]
-    
-    
+    referralsLv1: List[UserReferralRead]
+    referralsLv2: List[UserReferralRead]
+    referralsLv3: List[UserReferralRead]
+    referralsLv4: List[UserReferralRead]
+    referralsLv5: List[UserReferralRead]
+
+
 class WalletBaseSchema(BaseModel):
     address: str
-    phrase: str
-    
-    earnings: Decimal = 0.00
-    
-    rankEarnings: Decimal = 0.00
-    totalDeposit: Decimal = 0.00
-    totalWithdrawn: Decimal = 0.00
-    totalTokenPurchased: Decimal = 0.00
-    totalTeamVolume: Decimal = 0.00
-    totalReferralEarnings: Decimal = 0.00
-    
-    
-class WalletRead(WalletBaseSchema):
-    created: datetime
-    rankTitle: Optional[str] = None
-    
-    userId: int = None
-    user: Optional[UserRead] = None
-    staking: Optional["StakingRead"]
-    
-    createdAt: datetime
+    # phrase: str
+    # privateKey: str
 
-    @staticmethod
-    def get_rank(teamVolume: Decimal, deposit: Decimal, referrals: List[UserRead]):
-        rankEarnings = Decimal(0.00)
-        rank = None
-        if teamVolume >= Decimal(1000) and teamVolume < Decimal(5000) and deposit >= Decimal(50) and deposit < Decimal(100) and len(referrals) >= 3:
-            rankEarnings = Decimal(25)
-            rank = "Leader"
-        elif teamVolume >= Decimal(5000) and teamVolume < Decimal(20000) and deposit >= Decimal(100) and deposit < Decimal(500) and len(referrals) >= 5:
-            rankEarnings = Decimal(100)
-            rank = "Bison King"
-        elif teamVolume >= Decimal(20000) and teamVolume < Decimal(100000) and deposit >= Decimal(500) and deposit < Decimal(2000) and len(referrals) >= 10:
-            rankEarnings = Decimal(250)
-            rank = "Bison Hon"
-        elif teamVolume >= Decimal(100000) and teamVolume < Decimal(250000) and deposit >= Decimal(2000) and deposit < Decimal(5000) and len(referrals) >= 10:
-            rankEarnings = Decimal(1000)
-            rank = "Accumulator"
-        elif teamVolume >= Decimal(250000) and teamVolume < Decimal(500000) and deposit >= Decimal(5000) and deposit < Decimal(10000) and len(referrals) >= 10:
-            rankEarnings = Decimal(3000)
-            rank = "Bison Diamond"
-        elif teamVolume >= Decimal(500000) and teamVolume < Decimal(1000000) and deposit >= Decimal(10000) and deposit < Decimal(15000) and len(referrals) >= 10:
-            rankEarnings = Decimal(5000)
-            rank = "Bison Legend"
-        elif teamVolume >= Decimal(1000000) and deposit >= Decimal(150000) and len(referrals) >= 10:
-            rankEarnings = Decimal(7000)
-            rank = "Supreme Bison"
-        
-        return rankEarnings, rank
-        
-    @classmethod
-    def from_orm(cls, wallet: "WalletRead"):
-        wallet_dict = wallet.model_dump()
-        rankDetail = cls.get_rank(wallet.teamVolume, wallet.totalDeposit, wallet.user.referrals)
-        wallet_dict["rankEarnings"] = rankDetail[0]
-        wallet_dict["rankTitle"] = rankDetail[1]
-        return cls(**wallet_dict)
+    pendingBalance: Decimal = Decimal(0)
+    balance: Decimal = Decimal(0)
+    earnings: Decimal = Decimal(0)
+    availableReferralEarning: Decimal = Decimal(0)
+    expectedRankBonus: Decimal = Decimal(0)
+    weeklyRankEarnings: Decimal = Decimal(0)
+
+    totalDeposit: Decimal = Decimal(0)
+    totalTokenPurchased: Decimal = Decimal(0)
+    totalRankBonus: Decimal = Decimal(0)
+    totalFastBonus: Decimal = Decimal(0)
+    totalWithdrawn: Decimal = Decimal(0)
+    totalReferralEarnings: Decimal = Decimal(0)
+    totalreferralBonus: Decimal = Decimal(0)
+
+    # @staticmethod
+    # def calculate_referral_bonus(dob: Optional[datetime]) -> int:
+    #     if dob:
+    #         today = datetime.today().date()
+    #         age = today.year - dob.year - (
+    #             (today.month, today.day) < (dob.month, dob.day)
+    #         )
+    #         return age
+    #     return 0
+
+    # @classmethod
+    # def from_orm(cls, user: "UserRead"):
+    #     user_dict = user.model_dump()
+    #     user_dict["totalreferralBonus"] = cls.calculate_referral_bonus()
+
+class WalletRead(WalletBaseSchema):
+    uid: uuid.UUID
+    userUid: uuid.UUID = None
+
+    createdAt: datetime
 
     class Config:
         from_attributes = True  # Allows loading from ORM models like SQLModel
 
 
 class StakingBaseSchema(BaseModel):
-    roi: Decimal = 0.00
-    deposit: Decimal = 0.00
-    
+    roi: Decimal = Decimal(0)
+    deposit: Decimal = Decimal(0)
+
 
 class StakingCreate(BaseModel):
     deposit: Decimal
-    
-    
+
+
 class StakingRead(StakingBaseSchema):
-    walletAddress: str
-    
-    startedAt: datetime
-    andingAt: datetime
-    
-    class Config:
-        from_attributes = True  # Allows loading from ORM models like SQLModel
+    userUid: uuid.UUID
 
-
-class AllStatisticsRead(BaseModel):
-    totalAmountStaked: Decimal = 0.00
-    totalMatrixPoolGenerated: Decimal = 0.00
-    averageDailyReferral: int = 0
-    
-
-class MatrixPoolBaseSchema(BaseModel):
-    poolAmount: Decimal = 0.00
-    countDownFrom: datetime
-    countDownTo: datetime
-    active: bool = False
-    
-    
-class MatrixPoolRead(MatrixPoolBaseSchema):
-    uid: uuid.UUID
-    users: List["MatrixPoolUsersRead"]
-    
-    @staticmethod
-    def is_active(countDownTo: datetime):
-        return countDownTo <= datetime.now()
-    
-    @classmethod
-    def fro_orm(cls, pool: "MatrixPoolRead"):
-        pool_dict = pool.model_dump()
-        pool_dict["active"] = cls.is_active(pool.countDownTo)
-        return cls(**pool_dict)
-    
-
-    class Config:
-        from_attributes = True  # Allows loading from ORM models like SQLModel
-
-
-class MatrixPoolUsersCreate(BaseModel):
-    userId: int
-    referralsAdded: int = 1
-
-    
-class MatrixPoolUsersRead(BaseModel):
-    uid: uuid.UUID
-    matrixPoolUid: uuid.UUID
-    userId: int
-    referralsAdded: int = 1
+    start: Optional[datetime]
+    end: Optional[datetime]
+    nextRoiIncrease: Optional[datetime]
 
     class Config:
         from_attributes = True  # Allows loading from ORM models like SQLModel
@@ -312,30 +336,45 @@ class MatrixPoolUsersRead(BaseModel):
 
 class TokenMeterCreate(BaseModel):
     tokenAddress: str
-    totalCap: Decimal = 0.00
-    
-    
+    tokenPrivateKey: Optional[str] = None
+    tokenPhrase: Optional[str] = None
+    totalCap: Decimal = Decimal(100000000)
+    tokenPrice: Optional[Decimal] = Decimal(0.02)
+
+
+
 class TokenMeterUpdate(BaseModel):
-    tokenAddress: Optional[str]
-    totalCap: Optional[Decimal]
-    
+    tokenAddress: Optional[str] = None
+    tokenPrivateKey: Optional[str] = None
+    tokenPhrase: Optional[str] = None
+    totalCap: Optional[Decimal] = None
+    tokenPrice: Optional[Decimal] = None
+
+
+class SuiDollarRate(BaseModel):
+    rate: Decimal
+
 
 class TokenMeterRead(BaseModel):
     uid: uuid.UUID
-    
-    tokenAddress: str
-    tokenPrase: str
-    totalAmountCollected: Decimal = 0.00
+    tokenAddress: Optional[str]
+    # tokenPhrase: Optional[str]
+    # tokenPrivateKey: Optional[str]
+    totalCap: Decimal = Decimal(0)
+    tokenPrice: Decimal = Decimal(0)
+    percent_raised: Decimal = Decimal(0)
+    totalAmountCollected: Decimal = Decimal(0)
+    # suiUsdPrice: Decimal = Decimal(0)
+    totalDeposited: Decimal = Decimal(0)
+    totalWithdrawn: Decimal = Decimal(0)
+    totalSentToGMP: Decimal = Decimal(0)
+    totalDistributedByGMP: Decimal = Decimal(0)
 
-    totalCap: Decimal = 0.00
-    tokenPrice: Decimal = 0.00
-    percent_raised: Decimal = 0.00
-    
     @staticmethod
     def percentage_raised(token: "TokenMeterRead"):
-        percentage = (token.tokenPrice / token.totalCap) * 100
+        percentage = (token.totalAmountCollected / token.totalCap) * 100
         return percentage
-    
+
     @classmethod
     def fro_orm(cls, token: "TokenMeterRead"):
         token_dict = token.model_dump()
@@ -343,13 +382,78 @@ class TokenMeterRead(BaseModel):
         return cls(**token_dict)
 
 
+class MatrixPoolBase(BaseModel):
+    raisedPoolAmount: Decimal = Decimal(0)
+    startDate: datetime
+    endDate: datetime
+
+
+class MatrixPoolRead(MatrixPoolBase):
+    uid: uuid.UUID
+
+    users: List["MatrixUsersRead"]
+    totalReferrals: int = 0
+
+
+class MatrixUserCreateUpdate(BaseModel):
+    userId: str
+    referralsAdded: int
+
+
+class MatrixUsersRead(BaseModel):
+    uid: uuid.UUID
+    matrixPoolUid: uuid.UUID
+    userId: str
+    name: str
+    referralsAdded: int
+    matrixEarninig: Decimal
+    matrixShare: Decimal
+    position: int
+
+    @staticmethod
+    async def calc_position(matrixPoolUser: "MatrixUsersRead"):
+        mpu_position = 1
+        async with get_session_context() as session:
+            p_db = await session.exec(select(MatrixPoolUsers).where(MatrixPoolUsers.matrixPoolUid == matrixPoolUser.matrixPoolUid).order_by(MatrixPoolUsers.referralsAdded))
+            positions = p_db.all()
+
+            for p in positions:
+                if p.userId != matrixPoolUser.userId:
+                    mpu_position += 1
+                elif p.userid == matrixPoolUser.userId:
+                    return mpu_position
+
+    @staticmethod
+    async def return_name(matrixPoolUser: "MatrixUsersRead"):
+        async with get_session_context() as session:
+            mp_db = await session.exec(select(User).where(User.userid == matrixPoolUser.userId))
+            mp = mp_db.first()
+
+            name = matrixPoolUser.userId
+
+            if mp.firstName:
+                name = mp.firstName
+            elif mp.lastName:
+                name = mp.lastName
+
+            return name
+
+
+    @classmethod
+    def fro_orm(cls, pool: "MatrixUsersRead"):
+        pool_dict = pool.model_dump()
+        pool_dict["position"] = cls.calc_position(pool)
+        pool_dict["name"] = cls.return_name(pool)
+        return cls(**pool_dict)
+
+
 class ActivitiesRead(BaseModel):
     uid: uuid.UUID
-    
-    activityType: ActivitiyType
+
+    activityType: ActivityType
     strDetail: Optional[str]
     amountDetail: Optional[Decimal]
     suiAmount: Optional[Decimal]
-    userId: int
-    
+    userUid: uuid.UUID
+
     created: datetime

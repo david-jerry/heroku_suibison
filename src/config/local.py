@@ -6,7 +6,7 @@ class LocalConfig(BaseConfig):
     DATABASE_URL: str
     REDIS_URL: str = "redis://localhost:6379/0"
     CELERY_BROKER_URL: str
-    CELERY_RESULT_BACKEND: str
+    RESULT_BACKEND: str
     SUI_RPC: str
     SUI_FAUCET: str
 

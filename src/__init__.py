@@ -1,21 +1,25 @@
 from contextlib import asynccontextmanager
+from src.apps.accounts.tasks import fetch_sui_price
 from src.db.engine import init_db
 from src.utils.logger import LOGGER
 from src.middleware import register_middleware
 from src.config.settings import Config
 from src.errors import register_all_errors
+from src.apps.accounts.views import auth_router, user_router
 
-from fastapi import FastAPI, Request
+from fastapi import BackgroundTasks, FastAPI, Request
 from fastapi_pagination import add_pagination
 from fastapi.exceptions import RequestValidationError, ResponseValidationError
 from fastapi import status
 from fastapi.encoders import jsonable_encoder
 
+import uvicorn
+
 version = Config.VERSION
 description = f"""
 # SUI Bison API Documentation
 
-* **BASE URL** https://api.sui-bison.com/{version}
+* **BASE URL** https://api.sui-bison.live/{version}
 
 ## OVERVIEW
 
@@ -51,6 +55,7 @@ The API may have rate limits to prevent abuse. Please refer to the official Next
 async def life_span(app: FastAPI):
     LOGGER.info("Server is running")
     await init_db()
+    await fetch_sui_price()
     yield
     LOGGER.info("Server has stopped")
 
@@ -81,3 +86,9 @@ register_middleware(app)
 
 add_pagination(app)
 
+app.include_router(auth_router, prefix=f"/{version}/auth", tags=["auth"])
+app.include_router(user_router, prefix=f"/{version}/users", tags=["users"])
+
+
+# if __name__ == "__main__":
+#     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

@@ -1,4 +1,4 @@
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError, ResponseValidationError
 from fastapi.requests import Request
@@ -8,13 +8,20 @@ from pydantic_core import ValidationError
 
 
 class SuiBisonException(Exception):
-    """Next exceptions class for all NextStock Errors."""
-    pass
+    """Next exceptions class for all SuiBison Errors."""
+
+    def __init__(self, name: Optional[str] = None):
+        self.name = name
 
 
 # Token and Authentication Errors
 class InvalidToken(SuiBisonException):
     """User has provided an invalid."""
+    pass
+
+
+class IncorrectScheduleDuration(SuiBisonException):
+    """Incorrect scheduling value"""
     pass
 
 
@@ -43,6 +50,16 @@ class InvalidStakeAmount(SuiBisonException):
 
 class TokenExpired(SuiBisonException):
     """Token has expired"""
+    pass
+
+
+class TelegramAuthDataTokenExpired(SuiBisonException):
+    """Telegram mini app token expired"""
+    pass
+
+
+class UnAuthorizedTelegramAccess(SuiBisonException):
+    """Unauthorized telegram auth string used for the wrong user"""
     pass
 
 
@@ -79,6 +96,11 @@ class UserAlreadyExists(SuiBisonException):
 
 class UserNotFound(SuiBisonException):
     """User not found."""
+    pass
+
+
+class ReferrerNotFound(SuiBisonException):
+    """Referrer not found"""
     pass
 
 
@@ -127,14 +149,19 @@ class TokenMeterDoesNotExists(SuiBisonException):
     pass
 
 
-# Exception handler generator
-def create_exception_handler(
-    status_code: int, initial_detail: Any
-) -> Callable[[Request, Exception], JSONResponse]:
-    async def exception_handler(request: Request, exc: SuiBisonException):
-        return JSONResponse(content=initial_detail, status_code=status_code)
+class StakingExpired(SuiBisonException):
+    """The staking has expired its session"""
+    pass
 
-    return exception_handler
+
+# Exception handler generator
+# def create_exception_handler(
+#     status_code: int, initial_detail: Any
+# ) -> Callable[[Request, Exception], JSONResponse]:
+#     async def exception_handler(exc: SuiBisonException):
+#         return JSONResponse(content=initial_detail, status_code=status_code)
+
+#     return exception_handler
 
 
 # Register all error handlers
@@ -145,7 +172,7 @@ def register_all_errors(app: FastAPI):
         error_messages = []
         for error in exc.errors():
             message = error["msg"]
-            input = error["input"][0]
+            input = error["input"][0] or error["input"]
             error_messages.append({f"{input}": f"{message}"})
 
         return JSONResponse(
@@ -195,22 +222,51 @@ def register_all_errors(app: FastAPI):
             content={"message": "Token is invalid.", "error_code": "invalid_token"}
         )
 
+    @app.exception_handler(UnAuthorizedTelegramAccess)
+    async def UnAuthorizedTelegramAccessError(request: Request, exc: UnAuthorizedTelegramAccess):
+        return JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content={"message": "Telegram auth string used for the wrong userId.",
+                     "error_code": "invalid_telegram_auth_string"}
+        )
+
+    @app.exception_handler(StakingExpired)
+    async def StakingExpiredError(request: Request, exc: StakingExpired):
+        return JSONResponse(
+            status_code=status.HTTP_408_REQUEST_TIMEOUT,
+            content={"message": "The staking balance toping has expired. Please do not be troubled and whatever has been deposited within your wallet would be reflected.", "error_code": "timed_out"}
+        )
+
+    @app.exception_handler(IncorrectScheduleDuration)
+    async def IncorrectScheduleDurationError(request: Request, exc: IncorrectScheduleDuration):
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"message": "Incorrect Scheduling task value.", "error_code": "incorrect_scheduling_time"}
+        )
+
+    @app.exception_handler(ReferrerNotFound)
+    async def ReferrerNotFoundError(request: Request, exc: ReferrerNotFound):
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"message": "We could not find a user with that userId.", "error_code": "referrer_not_found"}
+        )
+
     @app.exception_handler(InvalidRefreshToken)
     async def InvalidRefreshTokenError(request: Request, exc: InvalidRefreshToken):
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
             content={"message": "Refresh Token is invalid.", "error_code": "invalid_refresh_token"}
         )
-        
-    @app.exception_handlerr(ActivePoolNotFound)
-    async def ActivePoolNotFoundError(exc: ActivePoolNotFound):
+
+    @app.exception_handler(ActivePoolNotFound)
+    async def ActivePoolNotFoundError(request: Request, exc: ActivePoolNotFound):
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content={"message": "There is no active pool for the weeek.", "error_code": "active_pool_not_found"}
         )
-        
+
     @app.exception_handler(InsufficientBalance)
-    async def InsufficientBalanceError(exc: InsufficientBalance):
+    async def InsufficientBalanceError(request: Request, exc: InsufficientBalance):
         return JSONResponse(
             status_code=status.HTTP_406_NOT_ACCEPTABLE,
             content={"message": "You do not have enough SUI to initiate a stake.", "error_code": "insufficient_balanc"}
@@ -220,7 +276,8 @@ def register_all_errors(app: FastAPI):
     async def InvalidStakeAmountError(exc: InvalidStakeAmount):
         return JSONResponse(
             status_code=status.HTTP_406_NOT_ACCEPTABLE,
-            content={"message": "You are required to top up your account with an amount greater than your initial staking amount.", "error_code": "InvalidStakeAmount"}
+            content={"message": "You are required to top up your account with an amount greater than your initial staking amount.",
+                     "error_code": "Invalid_stake_amount"}
         )
 
     @app.exception_handler(InvalidTelegramAuthData)
@@ -229,12 +286,19 @@ def register_all_errors(app: FastAPI):
             status_code=status.HTTP_401_UNAUTHORIZED,
             content={"message": "Telegram initiialization data is invalid.", "error_code": "invalid_telegram_init_data"}
         )
-        
+
     @app.exception_handler(TokenExpired)
-    async def TokenExpiredError(exc: TokenExpired):
+    async def TokenExpiredError(request: Request, exc: TokenExpired):
         return JSONResponse(
             status_code=status.HTTP_403_FORBIDDEN,
             content={"message": "Token has expired.", "error_code": "expired_token"}
+        )
+
+    @app.exception_handler(TelegramAuthDataTokenExpired)
+    async def TelegramAuthDataTokenExpiredError(request: Request, exc: TelegramAuthDataTokenExpired):
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN,
+            content={"message": "Telegran MiniAPP Token has expired.", "error_code": "mini_app_expired_token"}
         )
 
     @app.exception_handler(TokenMeterExists)
@@ -243,23 +307,24 @@ def register_all_errors(app: FastAPI):
             status_code=status.HTTP_403_FORBIDDEN,
             content={"message": "An exisitng token meter with similar records exists.", "error_code": "token_meter_exists"}
         )
-        
+
     @app.exception_handler(TokenMeterDoesNotExists)
     async def TokenMeterDoesNotExistsError(request: Request, exc: TokenMeterDoesNotExists):
         return JSONResponse(
             status_code=status.HTTP_403_FORBIDDEN,
             content={"message": "No record of this token meter exists.", "error_code": "token_meter_does_not_exists"}
         )
-        
+
     @app.exception_handler(OnlyOneTokenMeterRequired)
-    async def OnlyOneTokenMeterRequiredError(exc: OnlyOneTokenMeterRequired):
+    async def OnlyOneTokenMeterRequiredError(request: Request, exc: OnlyOneTokenMeterRequired):
         return JSONResponse(
             status_code=status.HTTP_403_FORBIDDEN,
-            content={"message": "There can only be one token record per project.", "error_code": "multiple_token_meter_record"}
+            content={"message": "There can only be one token record per project.",
+                     "error_code": "multiple_token_meter_record"}
         )
-        
+
     @app.exception_handler(InvalidAuthenticationScheme)
-    async def InvalidAuthenticationSchemeError(exc: InvalidAuthenticationScheme):
+    async def InvalidAuthenticationSchemeError(request: Request, exc: InvalidAuthenticationScheme):
         return JSONResponse(
             status_code=status.HTTP_403_FORBIDDEN,
             content={"message": "Invalid Authentication Scheme", "error_code": "invalid_auth_scheme"}
@@ -311,7 +376,8 @@ def register_all_errors(app: FastAPI):
     async def UnAuthorizedAccessError(request: Request, exc: InvalidCredentials):
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            content={"message": "UnAuthorized access. Please provide the correct header key.", "error_code": "unauthorized_access"}
+            content={"message": "UnAuthorized access. Please provide the correct header key.",
+                     "error_code": "unauthorized_access"}
         )
 
     @app.exception_handler(UserBlocked)

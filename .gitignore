@@ -1,6 +1,9 @@
 # Enviroment Files
 .env
+.env.local
 .env.production
+
+.venv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -99,3 +102,4 @@ Pipfile.lock
 
 # prevent Pipfile from being used in production instead
 Pipfile
+node_modules/

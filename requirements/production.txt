@@ -1,3 +1,4 @@
 -r base.txt
 
 psycopg[c]
+gunicorn==23.0.0

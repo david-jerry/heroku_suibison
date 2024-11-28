@@ -36,9 +36,10 @@ alembic init -t async migrations
 6. import the model driver file to your project. For example:
 `import sqlmodel`
 
-7. Open the generated `./alembic.ini` file:
+7. Open the generated `./alembic.ini` file.
+This will ensure te persistent state of the database remains the same
 
-6. Add the database driver you are working with:
+- Add the database driver you are working with:
 `sqlalchemy.url = postgresql+asyncpg://username:password@localhost:5432/db_name`
 
 Make sure to complete these steps before running an initial migration.
@@ -46,4 +47,5 @@ Make sure to complete these steps before running an initial migration.
 ```bash
 alembic revision --autogenerate -m "Migration Message"
 alembic upgrade head
+alembic stamp head # if the database is not uptodate
 ```

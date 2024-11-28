@@ -1,4 +1,4 @@
-# SUI Byson
+# SUI Byson - Version 2
 
 Sui-Bison is the first of its kind community driven smart contract project on the sui blockchain, with expert computer engineers and mathematicians, working to ensure that we earn and grow our sui portfolio.
 
@@ -28,7 +28,7 @@ Sui is a layer-1 blockchai optimizing for low-latency blockchain transfers. Its 
 
     # Configure your server domain
 
-    dokku domains:set-global dokku.me
+    dokku domains:set-global sui-bison.live
 
     # and your ssh key to the dokku user
 
@@ -49,3 +49,7 @@ Sui is a layer-1 blockchai optimizing for low-latency blockchain transfers. Its 
     ```shell
     cargo install --locked --git https://github.com/MystenLabs/sui.git --branch testnet sui
     ```
+
+## DOKKU LOG SPECIFIC
+
+dokku logs node-js-app -t -p web

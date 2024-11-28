@@ -10,14 +10,17 @@ asgiref
 asyncpg
 babel==2.16.0
 bcrypt==4.0.1
+bech32==1.2.0
+bip-utils==2.9.3
 ccxt==4.4.23
-celery
+celery[beat]
 cloudinary
 dnspython
 fastapi[all]==0.115.4
 fastapi-pagination==0.12.31
 hiredis
 humanize
+init-data-py==0.2.4
 loguru
 passlib
 phonenumbers==8.13.47
@@ -27,7 +30,7 @@ pydantic
 pydantic-settings
 pydantic-extra-types==2.9.0
 pysdk-sui==5.1
-pysui==0.71.0
+# pysui==0.71.0
 python-dateutil
 python-jose
 python-magic
@@ -43,3 +46,4 @@ sui-python-sdk==0.1.5 # Generate sui wallets and sign transactions with this
 typing-extensions
 urllib3
 websockets
+yfinance==0.2.49 
