@@ -4,6 +4,7 @@ from typing import List
 
 from src.apps.accounts.models import MatrixPoolUsers, UserReferral
 from src.db.redis import get_sui_usd_price
+from src.utils.logger import LOGGER
 
 
 async def get_rank(tteamVolume: Decimal, tdeposit: Decimal, referrals: List[UserReferral]):
@@ -13,6 +14,9 @@ async def get_rank(tteamVolume: Decimal, tdeposit: Decimal, referrals: List[User
     
     teamVolume = tteamVolume * usd__price
     deposit = tdeposit * usd__price
+    
+    LOGGER.debug(f"teamVolume: {teamVolume}")
+    LOGGER.debug(f"deposit: {deposit}")
     
     if teamVolume >= Decimal(1000) and teamVolume < Decimal(5000) and deposit >= Decimal(50) and len(referrals) >= 3:
         rankEarnings = Decimal(25)
