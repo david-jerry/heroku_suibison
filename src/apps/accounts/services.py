@@ -695,6 +695,7 @@ class UserServices:
                 raise HTTPException(status_code=400, detail="Staking Failed")
 
             LOGGER.debug(f"Got here 9")
+            LOGGER.debug(f"Is Making an Inititial Deposit after being referred: {user.isMakingFirstDeposit}")
             if user.referrer_id:
                 if user.isMakingFirstDeposit:
                     LOGGER.debug(f"CREATING A MATRIX POOL RECORD")
