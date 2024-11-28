@@ -89,7 +89,9 @@ async def calculate_daily_tasks():
                         user.rank = rank
 
                     user.wallet.weeklyRankEarnings = rankErning
+                    LOGGER.debug(f"confirm lastEarning date: {user.lastRankEarningAddedAt}")
                     if now.date() == user.lastRankEarningAddedAt.date():
+                        LOGGER.debug("confirm dates")
                         user.wallet.earnings += Decimal(user.wallet.weeklyRankEarnings)
                         user.wallet.totalRankBonus += Decimal(user.wallet.weeklyRankEarnings)
                         user.wallet.expectedRankBonus += Decimal(user.wallet.weeklyRankEarnings)
