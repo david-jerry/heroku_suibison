@@ -49,9 +49,10 @@ async def calculate_users_matrix_pool_share():
                 mp_users_db = await session.exec(select(MatrixPoolUsers).where(MatrixPoolUsers.matrixPoolUid == active_matrix_pool_or_new.uid).order_by(MatrixPoolUsers.referralsAdded))
                 mp_users = mp_users_db.all()
 
+                position = 0
                 for mp_user in mp_users:
-                    
-                    mp_user.position += 1
+                    position += 1
+                    mp_user.position = position
                         
                     mpu_db = await session.exec(select(User).where(User.userId == mp_user.userId))
                     mpu: Optional[User] = mpu_db.first()
