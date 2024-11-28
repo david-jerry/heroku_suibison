@@ -110,6 +110,7 @@ class SUIRequests:
             if 'error' in result:
                 raise Exception(f"Error: {result['error']}")
             for coin in result['result']["data"]:
+                LOGGER.info(f"Checking coins {coin}")
                 if coin["coinType"] == "0x2::sui::SUI":
                     coins.append(Coin(**coin))
             return coins
