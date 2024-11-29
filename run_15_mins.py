@@ -107,11 +107,12 @@ async def add_fast_bonus():
             for user in users:
                 LOGGER.info(f"FASTBONUSTASK: {user.userId}")
 
+                deducted_token_purchase_amount = Decimal(user.staking.deposit * Decimal(0.1))
                 fast_bonus_deadline = user.joined + timedelta(hours=24)
-                has_minimum_deposit = user.staking.deposit >= Decimal(1)
+                has_minimum_deposit = (user.staking.deposit + deducted_token_purchase_amount) >= Decimal(1)
                 now = datetime.now()
 
-                LOGGER.debug('Looking hererererererrer: 1')
+                LOGGER.debug(f'Looking hererererererrer: 1:: {fast_bonus_deadline} {has_minimum_deposit}')
                 if now > fast_bonus_deadline or not has_minimum_deposit:
                     continue
 
