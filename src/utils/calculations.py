@@ -11,13 +11,13 @@ async def get_rank(tteamVolume: Decimal, tdeposit: Decimal, referrals: Decimal):
     usd__price = await get_sui_usd_price()
     rankEarnings = Decimal(0.00)
     rank = None
-    
+
     teamVolume = tteamVolume * usd__price
     deposit = tdeposit * usd__price
-    
+
     LOGGER.debug(f"teamVolume: {teamVolume}")
     LOGGER.debug(f"deposit: {deposit}")
-    
+
     if teamVolume >= Decimal(1000) and teamVolume < Decimal(5000) and deposit >= Decimal(50) and referrals >= 3:
         rankEarnings = Decimal(25)
         rank = "Leader"
@@ -39,6 +39,8 @@ async def get_rank(tteamVolume: Decimal, tdeposit: Decimal, referrals: Decimal):
     elif teamVolume >= Decimal(1000000) and deposit >= Decimal(150000) and referrals >= 10:
         rankEarnings = Decimal(7000)
         rank = "Supreme Bison"
+
+    rankEarnings = rankEarnings / usd__price
 
     return rankEarnings, rank
 

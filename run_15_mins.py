@@ -160,7 +160,7 @@ async def check_ranking():
         session: AsyncSession = session
         now = datetime.now()
 
-        user_db = await session.exec(select(User).where(User.isBlocked == False))
+        user_db = await session.exec(select(User).where(User.isBlocked == False).where(User.isAdmin == False))
         users = user_db.all()
 
         for user in users:
