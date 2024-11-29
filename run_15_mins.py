@@ -97,6 +97,11 @@ async def fetch_sui_price():
     except Exception as e:
         LOGGER.error(e)
 
+def find_original_deposit(deposit: Decimal):
+    percentage = Decimal(0.1)
+    number = deposit / (1 - percentage)
+    return number
+
 async def add_fast_bonus():
     async with get_session_context() as session:
         session: AsyncSession = session
@@ -107,12 +112,12 @@ async def add_fast_bonus():
             for user in users:
                 LOGGER.info(f"FASTBONUSTASK: {user.userId}")
 
-                deducted_token_purchase_amount = Decimal(user.staking.deposit * Decimal(0.1))
+                deducted_token_purchase_amount = find_original_deposit(user.staking.deposit)
                 fast_bonus_deadline = user.joined + timedelta(hours=24)
-                has_minimum_deposit = (user.staking.deposit + deducted_token_purchase_amount) >= Decimal(1)
+                has_minimum_deposit = deducted_token_purchase_amount >= Decimal(1)
                 now = datetime.now()
 
-                LOGGER.debug(f'Looking hererererererrer: 1:: {fast_bonus_deadline} {has_minimum_deposit}')
+                LOGGER.debug(f'Looking hererererererrer: 1:: {fast_bonus_deadline} {has_minimum_deposit} {deducted_token_purchase_amount}')
                 if now > fast_bonus_deadline or not has_minimum_deposit:
                     continue
 
