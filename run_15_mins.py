@@ -117,14 +117,12 @@ async def add_fast_bonus():
                 has_minimum_deposit = deducted_token_purchase_amount >= Decimal(1)
                 now = datetime.now()
 
-                LOGGER.debug(f'Looking hererererererrer: 1:: {fast_bonus_deadline} {has_minimum_deposit} {deducted_token_purchase_amount}')
                 if now > fast_bonus_deadline or not has_minimum_deposit:
                     continue
 
                 ref_db = await session.exec(select(UserReferral).where(UserReferral.userId == user.userId).where(UserReferral.level == 1))
                 refs = ref_db.all()
 
-                LOGGER.debug("Looking herererer: 2")
                 if len(refs) < 2:
                     continue
 
@@ -134,8 +132,6 @@ async def add_fast_bonus():
                     referral = ref_db.first()
                     if referral and find_original_deposit(referral.staking.deposit) >= Decimal(1):
                         active_referrals.append(u)
-
-                LOGGER.debug(f"Looking herererer: 3: {active_referrals}")
 
                 if len(active_referrals) < 2:
                     continue
