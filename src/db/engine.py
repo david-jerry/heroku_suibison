@@ -43,7 +43,7 @@ async def get_session() -> AsyncGenerator[AsyncSession,  None]:
             LOGGER.debug("Database session error")
             LOGGER.error(pprint.pprint(e, indent=4, depth=4))
             await session.rollback()
-            raise
+            raise e
         finally:
             await session.close()
 
@@ -62,7 +62,7 @@ async def get_session_context() -> AsyncSession: # type: ignore
             LOGGER.debug("Database session error")
             LOGGER.error(pprint.pprint(e, indent=4, depth=4))
             await session.rollback()
-            raise
+            raise e
         finally:
             await session.close()
 
@@ -76,6 +76,6 @@ async def get_async_session_context():
             LOGGER.debug("Database session error")
             LOGGER.error(pprint.pprint(e, indent=4, depth=4))
             await session.rollback()
-            raise
+            raise e
         finally:
             await session.close()

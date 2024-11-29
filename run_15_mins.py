@@ -101,38 +101,46 @@ async def add_fast_bonus():
     async with get_session_context() as session:
         session: AsyncSession = session
         try:
-            user_db = await session.exec(select(User).where(User.isBlocked == False))
+            user_db = await session.exec(select(User).where(User.isBlocked == False).where(User.hasMadeFirstDeposit == False))
             users = user_db.all()
 
-            LOGGER.debug(f"FASTBONUSTASK: {users}")
-
             for user in users:
-                LOGGER.debug(user.userId)
+                LOGGER.info(f"FASTBONUSTASK: {user.userId}")
+
+                fast_bonus_deadline = user.joined + timedelta(hours=24)
+                has_minimum_deposit = user.staking.deposit >= Decimal(1)
+                now = datetime.now()
+
+                LOGGER.debug('Looking hererererererrer: 1')
+                if now > fast_bonus_deadline or not has_minimum_deposit:
+                    continue
+
                 ref_db = await session.exec(select(UserReferral).where(UserReferral.userId == user.userId).where(UserReferral.level == 1))
                 refs = ref_db.all()
 
-                # the has made first deposit is a means to know if the user has gained the fastadd bonus to not give them again
-                if len(refs) > 0 and not user.hasMadeFirstDeposit:
-                    fast_boost_time = user.joined + timedelta(hours=24)
-                    # db_referrals = await session.exec(select(UserReferral).where(UserReferral.userId == referring_user.userId).where(UserReferral.level == 1))
-                    # referrals = db_referrals.all()
+                LOGGER.debug("Looking herererer: 2")
+                if len(refs) < 1:
+                    continue
 
-                    paid_users = []
-                    for u in refs:
-                        ref_db = await session.exec(select(User).where(User.userId == u.userId))
-                        referrer = ref_db.first()
-                        if referrer and referrer.staking.deposit >= Decimal(1):
-                            paid_users.append(u)
+                active_referrals = []
+                for u in refs:
+                    ref_db = await session.exec(select(User).where(User.userId == u.userId))
+                    referral = ref_db.first()
+                    if referral and referral.staking.deposit >= Decimal(1):
+                        active_referrals.append(u)
 
-                    if user.joined < fast_boost_time and len(paid_users) >= 2:
-                        user.wallet.totalFastBonus += Decimal(1.00)
-                        user.staking.deposit += Decimal(1.00)
-                        user.hasMadeFirstDeposit = True
+                LOGGER.debug(f"Looking herererer: 3: {active_referrals}")
 
-                    await session.commit()
-                    await session.refresh(user)
+                if len(active_referrals) < 2:
+                    continue
 
-                # ###### CHECK IF THE REFERRING USER HAS A REFERRER THEN REPEAT THE PROCESS AGAIN
+                user.wallet.totalFastBonus += Decimal(1.00)
+                user.staking.deposit += Decimal(1.00)
+                user.hasMadeFirstDeposit = True
+
+                await session.commit()
+                await session.refresh(user)
+
             await session.close()
         except Exception as e:
             LOGGER.error(e)
