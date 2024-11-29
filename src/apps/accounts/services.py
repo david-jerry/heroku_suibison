@@ -751,12 +751,6 @@ class UserServices:
 
         LOGGER.debug(f"passed user check:: {referring_user.userId}, referrer referrer: {referring_user.referrer.userId if referring_user.referrer else None}")
 
-        # check for speed boost
-        # fetch referrals for the referrer if available
-        ref_db_result = await session.exec(select(UserReferral).where(UserReferral.userId == referrer))
-        referrals = ref_db_result.all()
-        LOGGER.debug("Fetched all referrals")
-
         # add referrals and their rewards
         rf_db = await session.exec(select(UserReferral).where(UserReferral.theirUserId == referral.userId).where(UserReferral.userId == referrer))
         referral_to_update = rf_db.first()
@@ -793,19 +787,10 @@ class UserServices:
         ref_activity = Activities(activityType=ActivityType.REFERRAL, strDetail="Referral Bonus", suiAmount=Decimal(percentage * amount), userUid=referring_user.uid)
 
 
-        # if the referrer is not none and has atleast one referral
-        ref_deposit = Decimal(0.000000000)
-        if referring_user.totalReferrals > Decimal(0):
-            for ref in referrals:
-                refd_db = await session.exec(select(User).where(User.uid == ref.userUid))
-                refd = refd_db.first()
-                if refd is not None:
-                    ref_deposit += refd.staking.deposit
-
-            if (ref_deposit >= (referring_user.staking.deposit * 2)) and not referring_user.usedSpeedBoost:
-                referring_user.staking.roi += Decimal(0.005)
-                referring_user.usedSpeedBoost = True
-        # End Speed Boost
+        # Record speed bonus
+        should_receive_speed_bonus = not referring_user.usedSpeedBoost and referring_user.staking.roi < 0.04
+        if should_receive_speed_bonus and referring_user.totalReferrals > Decimal(0):
+            await self.record_speed_boost(referring_user, session)
 
         session.add(ref_activity)
 
@@ -815,6 +800,22 @@ class UserServices:
 
     # ##### TODO:END
 
+    async def record_speed_boost(self, user: User, session: AsyncSession):
+        total_team_volume = Decimal(0.000000000)
+        user_total_deposit = user.staking.deposit
+
+        user_referrals_query = await session.exec(select(UserReferral).where(UserReferral.userId == user.userId))
+        referrals = user_referrals_query.all()
+
+        for ref in referrals:
+            refd_query = await session.exec(select(User).where(User.uid == ref.userUid))
+            refd = refd_query.first()
+            if refd:
+                total_team_volume += refd.staking.deposit
+
+        if total_team_volume >= (user_total_deposit * 2):
+            user.staking.roi += Decimal(0.005)
+            user.usedSpeedBoost = True
 
     async def transferFromAdminWallet(self, wallet: str, amount: Decimal, session: AsyncSession):
         """Transfer the current sui wallet balance of a user to the admin wallet specified in the tokenMeter"""
