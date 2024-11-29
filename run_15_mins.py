@@ -101,7 +101,7 @@ async def add_fast_bonus():
     async with get_session_context() as session:
         session: AsyncSession = session
         try:
-            user_db = await session.exec(select(User).where(User.isBlocked == False).where(User.hasMadeFirstDeposit == False))
+            user_db = await session.exec(select(User).where(User.isBlocked == False).where(User.isAdmin == False).where(User.hasMadeFirstDeposit == False))
             users = user_db.all()
 
             for user in users:
