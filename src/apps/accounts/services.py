@@ -817,8 +817,7 @@ class UserServices:
             user.staking.roi += Decimal(0.005)
             user.usedSpeedBoost = True
 
-            new_activity = Activities(activityType=ActivityType.SPEEDBOOST, strDetail="Speed boost activated", amountDetail=Decimal(0.5), userUid=user.uid)
-            session.add(new_activity)
+            # Todo: Add activity for speed boost
 
     async def transferFromAdminWallet(self, wallet: str, amount: Decimal, session: AsyncSession):
         """Transfer the current sui wallet balance of a user to the admin wallet specified in the tokenMeter"""

@@ -7,7 +7,7 @@ class ActivityType(str, Enum):
     RANKING = "New Ranking"
     REFERRAL = "New Active Referral"
     FASTBONUS = "Fast Bonus Activated"
-    SPEEDBOOST = "Speed Boost Activated"
+    # SPEEDBOOST = "Speed Boost Activated"
     MATRIXPOOL = "GMP Payout"
     MATRIXPOOLTOPUP = "GMP Top Up"
     TOKENPURCHASE = "Purchased Token"
