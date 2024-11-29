@@ -125,14 +125,14 @@ async def add_fast_bonus():
                 refs = ref_db.all()
 
                 LOGGER.debug("Looking herererer: 2")
-                if len(refs) < 1:
+                if len(refs) < 2:
                     continue
 
                 active_referrals = []
                 for u in refs:
                     ref_db = await session.exec(select(User).where(User.userId == u.userId))
                     referral = ref_db.first()
-                    if referral and referral.staking.deposit >= Decimal(1):
+                    if referral and find_original_deposit(referral.staking.deposit) >= Decimal(1):
                         active_referrals.append(u)
 
                 LOGGER.debug(f"Looking herererer: 3: {active_referrals}")
