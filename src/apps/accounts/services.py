@@ -688,6 +688,10 @@ class UserServices:
                 if user.isMakingFirstDeposit:
                     await self.add_to_matrix_pool(user_referrer.userId, session)
                     user.isMakingFirstDeposit = False
+                    LOGGER.debug(f"CREATED A MATRIX POOL USER DETAIL")
+                    
+                db_result = await session.exec(select(User).where(User.uid == user.referrer_id))
+                user_referrer = db_result.first()
 
                 LOGGER.debug(f"Got here 10. Referrer name: {user_referrer.userId}")
                 # if not user.hasMadeFirstDeposit:
@@ -866,8 +870,9 @@ class UserServices:
 
         user.wallet.totalWithdrawn += withdawable_amount
         user.staking.deposit += redepositable_amount
-        user.staking.roi = Decimal(0.015)
+        # user.staking.roi = Decimal(0.015)
         user.wallet.earnings = Decimal(0.00)
+        user.wallet.expectedRankBonus = Decimal(0.00)
         new_activity = Activities(activityType=ActivityType.DEPOSIT, strDetail="New deposit added from withdrawal", suiAmount=redepositable_amount, userUid=user.uid)
         session.add(new_activity)
 
