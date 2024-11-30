@@ -56,9 +56,10 @@ async def calculate_daily_tasks():
                         stake.end = now + timedelta(days=100)
 
 
-                    if stake.lastEarningTime + timedelta(days=1) > now:
+                    if stake.lastEarningTime + timedelta(days=1) < now:
                         interest_earned = stake.deposit * stake.roi
                         user.wallet.earnings += interest_earned
+                        stake.lastEarningTime = now
 
                         # Todo: add activity here to notify user about earning topup
 
