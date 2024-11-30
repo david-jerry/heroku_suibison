@@ -184,11 +184,9 @@ async def check_ranking():
                 if now.date() == user.lastRankEarningAddedAt.date():
                     if rank:
                         LOGGER.debug("confirm dates")
-                        user.rank = None
                         user.wallet.earnings += user.wallet.weeklyRankEarnings
                         user.wallet.totalRankBonus += user.wallet.weeklyRankEarnings
                         user.wallet.expectedRankBonus += user.wallet.weeklyRankEarnings
-                        user.wallet.weeklyRankEarnings = 0
 
                     user.lastRankEarningAddedAt = now + timedelta(days=7)
 
