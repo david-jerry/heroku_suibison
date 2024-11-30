@@ -74,13 +74,6 @@ async def calculate_users_matrix_pool_share():
                         mpu.wallet.availableReferralEarning += earning
                         mpu.wallet.totalReferralEarnings += earning
 
-                        sevenDaysLater = now + timedelta(days=7)
-
-                        new_pool = MatrixPool(
-                            raisedPoolAmount=Decimal(0), startDate=now, endDate=sevenDaysLater
-                        )
-                        session.add(new_pool)
-
                     await session.commit()
                     await session.refresh(mp_user)
             await session.close()
