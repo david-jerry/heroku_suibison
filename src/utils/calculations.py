@@ -40,7 +40,8 @@ async def get_rank(tteamVolume: Decimal, tdeposit: Decimal, referrals: Decimal):
         rankEarnings = Decimal(7000)
         rank = "Supreme Bison"
 
-    rankEarnings = rankEarnings / usd__price
+    if rank:
+        rankEarnings = rankEarnings / usd__price
 
     return rankEarnings, rank
 

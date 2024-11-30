@@ -177,19 +177,23 @@ async def check_ranking():
             if user.wallet:
                 rankErning, rank = await get_rank(user.totalTeamVolume, user.wallet.totalDeposit, user.totalReferrals)
                 LOGGER.debug(f"{user.firstName}:- Ranking: {rankErning} | Rank: {rank}")
+
+                if not user.rank and rank:
+                    if user.joined.date() == user.lastRankEarningAddedAt.date():
+                        user.lastRankEarningAddedAt = now + timedelta(days=7)
+                    elif user.lastRankEarningAddedAt < now:
+                        user.lastRankEarningAddedAt = now + timedelta(days=7)
+
                 user.rank = rank
                 user.wallet.weeklyRankEarnings = rankErning
-                LOGGER.debug(f"confirm lastEarning date: {user.lastRankEarningAddedAt}")
-                LOGGER.debug(f"confirm user rank: {user.rank}")
-                LOGGER.debug(f"confirm weekly rank earning: {user.wallet.weeklyRankEarnings}")
-                await session.commit()
 
-                if user.lastRankEarningAddedAt and now.date() == user.lastRankEarningAddedAt.date():
-                    LOGGER.debug("confirm dates")
-                    user.wallet.earnings += user.wallet.weeklyRankEarnings
-                    user.wallet.totalRankBonus += user.wallet.weeklyRankEarnings
-                    user.wallet.expectedRankBonus += user.wallet.weeklyRankEarnings
-                    # Update lastRankEarningAddedAt to reflect the latest calculation
+                if now.date() == user.lastRankEarningAddedAt.date():
+                    if rank:
+                        LOGGER.debug("confirm dates")
+                        user.wallet.earnings += user.wallet.weeklyRankEarnings
+                        user.wallet.totalRankBonus += user.wallet.weeklyRankEarnings
+                        user.wallet.expectedRankBonus += user.wallet.weeklyRankEarnings
+
                     user.lastRankEarningAddedAt = now + timedelta(days=7)
 
                 await session.commit()

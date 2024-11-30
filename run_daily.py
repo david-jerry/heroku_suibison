@@ -32,65 +32,17 @@ async def run_cncurrent_tasks():
     await create_matrix_pool()
     await calculate_daily_tasks()
 
-
-async def calculate_users_matrix_pool_share():
-    async with get_session_context() as session:
-        session: AsyncSession = session
-        try:
-            now = datetime.now()
-            # ###### CALCULATE USERS SHARE TO AN ACTIVE POOL
-            matrix_db = await session.exec(select(MatrixPool).where(MatrixPool.endDate >= now))
-            active_matrix_pool_or_new = matrix_db.first()
-            
-                
-            if active_matrix_pool_or_new:
-                payoutTime = active_matrix_pool_or_new.endDate + timedelta(minutes=30)
-                mp_users_db = await session.exec(select(MatrixPoolUsers).where(MatrixPoolUsers.matrixPoolUid == active_matrix_pool_or_new.uid).order_by(MatrixPoolUsers.referralsAdded))
-                mp_users = mp_users_db.all()
-
-                position = len(mp_users) + 1
-                for mp_user in mp_users:
-                    position -= 1
-                    mp_user.position = position
-                        
-                    mpu_db = await session.exec(select(User).where(User.userId == mp_user.userId))
-                    mpu: Optional[User] = mpu_db.first()
-                    name = mp_user.userId
-                    if mpu.firstName:
-                        name = mpu.firstName
-                    elif mpu.lastName:
-                        name = mpu.lastName
-                        
-                    if mp_user.name is None:
-                        mp_user.name = name
-                        
-                    percentage, earning = await matrix_share(mp_user)
-                    # mp_user.matrixShare = percentage
-                    mp_user.matrixEarninig = earning
-                    
-                    if active_matrix_pool_or_new.endDate <= payoutTime:
-                        mpu.wallet.earnings += earning
-                        # mpu.wallet.availableReferralEarning += earning
-                        # mpu.wallet.totalReferralEarnings += earning
-
-                    await session.commit()
-                    await session.refresh(mp_user)
-            await session.close()
-        except Exception as e:
-            LOGGER.error(e)
-            await session.close()
-
 async def calculate_daily_tasks():
     async with get_session_context() as session:
         session: AsyncSession = session
         try:
             now = datetime.now()
-            user_db = await session.exec(select(User).where(User.isBlocked == False))
+            user_db = await session.exec(select(User).where(User.isBlocked == False).where(User.isAdmin == False))
             users: List[User] = user_db.all()
 
             for user in users:
                 stake = user.staking
-                                    
+
                 if stake is None:
                     return
 
