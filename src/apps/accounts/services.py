@@ -603,10 +603,9 @@ class UserServices:
         stake = user.staking
 
         # if there is a top up or new stake balance then run else just skip
-        if stake.end is None:
+        if stake.start is None:
             stake.start = now
             stake.lastEarningTime = now
-            stake.end = enddate
             stake.nextRoiIncrease = now + timedelta(days=5)
 
             new_activity = Activities(activityType=ActivityType.DEPOSIT,
