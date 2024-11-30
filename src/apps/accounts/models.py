@@ -84,7 +84,7 @@ class User(SQLModel, table=True):
         sa_relationship_kwargs={"cascade": "all, delete-orphan", "lazy": "selectin"}
     )
     referrer_id: uuid.UUID = Field(nullable=True, foreign_key="users.uid")
-    referrer_name: str = Field(nullable=True, default=None)
+    referrer_name: Optional[str] = Field(nullable=True, default=None)
 
     # Activities
     activities: List["Activities"] = Relationship(
