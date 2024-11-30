@@ -128,8 +128,8 @@ async def add_fast_bonus():
 
                 active_referrals = []
                 for u in refs:
-                    LOGGER.info(f'JOIFFFFFF:::: {u.userId} {user.userId}')
-                    ref_db = await session.exec(select(User).where(User.userId == u.userId))
+                    LOGGER.info(f'JOIFFFFFF:::: {u.theirUserId} {user.userId}')
+                    ref_db = await session.exec(select(User).where(User.userId == u.theirUserId))
                     referral = ref_db.first()
                     if referral:
                         LOGGER.info(f'KFFFKKFFFKFFIIIIIIIII: {referral.staking.uid}')
