@@ -289,7 +289,7 @@ class UserServices:
 
         name = referring_user.userId
         if referring_user.firstName:
-            name = referring_user.firstName 
+            name = referring_user.firstName
         elif referring_user.lastName:
             name = referring_user.lastName
         new_user.referrer_id = referring_user.uid
@@ -605,6 +605,7 @@ class UserServices:
         # if there is a top up or new stake balance then run else just skip
         if stake.end is None:
             stake.start = now
+            stake.lastEarningTime = now
             stake.end = enddate
             stake.nextRoiIncrease = now + timedelta(days=5)
 
@@ -695,7 +696,7 @@ class UserServices:
                     await self.add_to_matrix_pool(user_referrer.userId, session)
                     user.isMakingFirstDeposit = False
                     LOGGER.debug(f"CREATED A MATRIX POOL USER DETAIL")
-                    
+
                 db_result = await session.exec(select(User).where(User.uid == user.referrer_id))
                 user_referrer = db_result.first()
 
