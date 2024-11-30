@@ -336,6 +336,7 @@ class StakingRead(StakingBaseSchema):
     start: Optional[datetime]
     end: Optional[datetime]
     nextRoiIncrease: Optional[datetime]
+    lastEarningTime: Optional[datetime]
 
     class Config:
         from_attributes = True  # Allows loading from ORM models like SQLModel

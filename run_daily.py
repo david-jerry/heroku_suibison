@@ -26,8 +26,6 @@ from sqlmodel import select
 
 user_services = UserServices()
 
-
-
 async def run_cncurrent_tasks():
     await create_matrix_pool()
     await calculate_daily_tasks()
@@ -40,37 +38,35 @@ async def calculate_daily_tasks():
             user_db = await session.exec(select(User).where(User.isBlocked == False).where(User.isAdmin == False))
             users: List[User] = user_db.all()
 
+            LOGGER.info("running daily task calculation logic")
+
             for user in users:
                 stake = user.staking
 
                 if stake is None:
                     return
 
-                # ########## CALCULATE ROI AND INTEREST ########## #
-                if stake.start is not None and (stake.end is None or stake.end < now):
-                    if stake.roi < Decimal(0.04) and stake.nextRoiIncrease == now:
+                if stake.start:
+                    if stake.roi < Decimal(0.04) and stake.nextRoiIncrease > now:
                         # Increase ROI and set the next increase date
                         stake.roi += Decimal(0.005)
                         stake.nextRoiIncrease = now + timedelta(days=5)
-                    elif stake.roi == Decimal(0.04):
-                        # Set end date for the stake
+
+                    if stake.roi == Decimal(0.04):
                         stake.end = now + timedelta(days=100)
 
-                    # Accrue interest
-                    interest_earned = stake.deposit * stake.roi
-                    user.wallet.earnings += interest_earned
 
-                # Log and reset if the stake end date is today
-                if stake.end is not None and stake.end.date() == now.date():
-                    stake.roi = Decimal(0)
+                    if stake.lastEarningTime + timedelta(days=1) > now:
+                        interest_earned = stake.deposit * stake.roi
+                        user.wallet.earnings += interest_earned
+
+                        # Todo: add activity here to notify user about earning topup
+
+                if stake.end and stake.end.date() == now.date():
+                    stake.roi = Decimal(0.01)
                     stake.end = None
                     stake.nextRoiIncrease = None
 
-                LOGGER.debug(f"STAKE END DATE: {stake.end}")
-
-
-
-                # session.add(user)
                 await session.commit()
                 await session.refresh(user)
             await session.close()
