@@ -66,6 +66,7 @@ async def calculate_daily_tasks():
                 if stake.end and stake.end.date() == now.date():
                     stake.roi = Decimal(0.01)
                     stake.end = None
+                    stake.start = None
                     stake.nextRoiIncrease = None
 
                 await session.commit()
