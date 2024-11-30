@@ -47,7 +47,7 @@ async def calculate_daily_tasks():
                     return
 
                 if stake.start:
-                    if stake.roi < Decimal(0.04) and stake.nextRoiIncrease > now:
+                    if stake.roi < Decimal(0.04) and stake.nextRoiIncrease < now:
                         # Increase ROI and set the next increase date
                         stake.roi += Decimal(0.005)
                         stake.nextRoiIncrease = now + timedelta(days=5)
