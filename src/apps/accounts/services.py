@@ -289,7 +289,7 @@ class UserServices:
 
         name = referring_user.userId
         if referring_user.firstName:
-            name = referring_user.firstName
+            name = referring_user.firstName 
         elif referring_user.lastName:
             name = referring_user.lastName
         new_user.referrer_id = referring_user.uid
@@ -314,7 +314,6 @@ class UserServices:
 
         if active_matrix_pool_or_new is None:
             active_matrix_pool_or_new = MatrixPool(
-                uid = uuid.uuid4(),
                 totalReferrals=1,
                 startDate=now,
                 endDate=now + timedelta(days=7)
@@ -561,32 +560,28 @@ class UserServices:
 
         if token_meter is None:
             raise TokenMeterDoesNotExists()
-        
-        balance = amount - Decimal(0.001)
 
         try:
-            status = await self.performTransactionToAdmin(balance, user.wallet.address, user.wallet.privateKey )
+            status = await self.performTransactionToAdmin(token_meter.tokenAddress, user.wallet.address, user.wallet.privateKey )
             if "failure" in status:
                 LOGGER.debug(f"RETRYING REANSFER")
                 t_amount -= 100
-                await self.transferToAdminWallet(user, amount, session)
+                await self.transferToAdminWallet(user, Decimal(t_amount / 10**9), session)
             return status
         except Exception as e:
             raise HTTPException(status_code=400, detail=str(e))
 
-    async def performTransactionToAdmin(self, balance: Decimal, sender: str, privKey: str) -> str:
+    async def performTransactionToAdmin(self, recipient: str, sender: str, privKey: str) -> str:
         coinIds = await SUI.getCoins(sender)
         LOGGER.debug(f"Coins: {coinIds}")
-        if len(coinIds) < 2:
-            transferResponse = await SUI.split_coins(sender, coinIds[0].coinObjectId, Decimal(0.001), balance)
-            await SUI.executeTransaction(transferResponse, privKey)
-        deposit = await SUI.executeDeposit(balance, privKey)
-        return deposit
+        transferResponse = await SUI.payAllSui(sender, recipient, Decimal(0.003), coinIds)
+        transaction = await SUI.executeTransaction(transferResponse.txBytes, privKey)
+        return transaction
 
     async def performTransactionFromAdmin(self, amount: Decimal, recipient: str, sender: str, privKey: str) -> str:
-        # coinIds = await SUI.getCoins(sender)
-        # transferResponse = await SUI.paySui(sender, recipient, amount, Decimal(0.03), coinIds)
-        transaction = await SUI.executeWithdrawals(amount, recipient)
+        coinIds = await SUI.getCoins(sender)
+        transferResponse = await SUI.paySui(sender, recipient, amount, Decimal(0.03), coinIds)
+        transaction = await SUI.executeTransaction(transferResponse, privKey)
         return transaction
 
     async def handle_stake_logic(self, amount: Decimal, token_meter: TokenMeter, user: User, session: AsyncSession):
@@ -604,12 +599,13 @@ class UserServices:
 
         await self.update_amount_of_sui_token_earned(token_meter.tokenPrice, sbt_amount, user, session)
 
+        enddate = now + timedelta(days=100)
         stake = user.staking
 
         # if there is a top up or new stake balance then run else just skip
-        if stake.start is None:
+        if stake.end is None:
             stake.start = now
-            stake.lastEarningTime = now
+            stake.end = enddate
             stake.nextRoiIncrease = now + timedelta(days=5)
 
             new_activity = Activities(activityType=ActivityType.DEPOSIT,
@@ -699,7 +695,7 @@ class UserServices:
                     await self.add_to_matrix_pool(user_referrer.userId, session)
                     user.isMakingFirstDeposit = False
                     LOGGER.debug(f"CREATED A MATRIX POOL USER DETAIL")
-
+                    
                 db_result = await session.exec(select(User).where(User.uid == user.referrer_id))
                 user_referrer = db_result.first()
 
