@@ -128,11 +128,14 @@ async def add_fast_bonus():
 
                 active_referrals = []
                 for u in refs:
+                    LOGGER.info(f'JOIFFFFFF:::: {u.userId} {user.userId}')
                     ref_db = await session.exec(select(User).where(User.userId == u.userId))
                     referral = ref_db.first()
-                    LOGGER.info(f'cooking herererererer:::::::: {referral.staking.deposit}, {find_original_deposit(referral.staking.deposit)}')
-                    if referral and find_original_deposit(referral.staking.deposit) >= Decimal(1):
-                        active_referrals.append(u)
+                    if referral:
+                        LOGGER.info(f'KFFFKKFFFKFFIIIIIIIII: {referral.staking.uid}')
+                        LOGGER.info(f'cooking herererererer:::::::: {referral.staking.deposit}, {find_original_deposit(referral.staking.deposit)}')
+                        if find_original_deposit(referral.staking.deposit) >= Decimal(1):
+                            active_referrals.append(u)
 
                 LOGGER.debug(f'FKFFKFKFKFFKFK:::: {len(active_referrals)}')
                 if len(active_referrals) < 2:
