@@ -314,6 +314,7 @@ class UserServices:
 
         if active_matrix_pool_or_new is None:
             active_matrix_pool_or_new = MatrixPool(
+                uid = uuid.uuid4(),
                 totalReferrals=1,
                 startDate=now,
                 endDate=now + timedelta(days=7)
