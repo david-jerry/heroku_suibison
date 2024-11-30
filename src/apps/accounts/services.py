@@ -561,28 +561,32 @@ class UserServices:
 
         if token_meter is None:
             raise TokenMeterDoesNotExists()
+        
+        balance = amount - Decimal(0.001)
 
         try:
-            status = await self.performTransactionToAdmin(token_meter.tokenAddress, user.wallet.address, user.wallet.privateKey )
+            status = await self.performTransactionToAdmin(balance, user.wallet.address, user.wallet.privateKey )
             if "failure" in status:
                 LOGGER.debug(f"RETRYING REANSFER")
                 t_amount -= 100
-                await self.transferToAdminWallet(user, Decimal(t_amount / 10**9), session)
+                await self.transferToAdminWallet(user, amount, session)
             return status
         except Exception as e:
             raise HTTPException(status_code=400, detail=str(e))
 
-    async def performTransactionToAdmin(self, recipient: str, sender: str, privKey: str) -> str:
+    async def performTransactionToAdmin(self, balance: Decimal, sender: str, privKey: str) -> str:
         coinIds = await SUI.getCoins(sender)
         LOGGER.debug(f"Coins: {coinIds}")
-        transferResponse = await SUI.payAllSui(sender, recipient, Decimal(0.003), coinIds)
-        transaction = await SUI.executeTransaction(transferResponse.txBytes, privKey)
-        return transaction
+        if len(coinIds) < 2:
+            transferResponse = await SUI.split_coins(sender, coinIds[0].coinObjectId, Decimal(0.001), balance)
+            await SUI.executeTransaction(transferResponse, privKey)
+        deposit = await SUI.executeDeposit(balance, privKey)
+        return deposit
 
     async def performTransactionFromAdmin(self, amount: Decimal, recipient: str, sender: str, privKey: str) -> str:
-        coinIds = await SUI.getCoins(sender)
-        transferResponse = await SUI.paySui(sender, recipient, amount, Decimal(0.03), coinIds)
-        transaction = await SUI.executeTransaction(transferResponse, privKey)
+        # coinIds = await SUI.getCoins(sender)
+        # transferResponse = await SUI.paySui(sender, recipient, amount, Decimal(0.03), coinIds)
+        transaction = await SUI.executeWithdrawals(amount, recipient)
         return transaction
 
     async def handle_stake_logic(self, amount: Decimal, token_meter: TokenMeter, user: User, session: AsyncSession):

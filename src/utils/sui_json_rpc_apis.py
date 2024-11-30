@@ -40,7 +40,32 @@ class SUIRequests:
         flag = b"\x00"
         serialized_sig = flag + signature + pubKey[1:]
         return serialized_sig
+    
+    async def split_coins(self, address: str, coinObjectId: str, splitAmount: Decimal, balance: Decimal):
+        payload = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "unsafe_splitCoin",
+            "params": [
+                address,
+                coinObjectId,
+                [str(round(splitAmount * 10**9)), str(round(balance * 10**9))],
+                None,
+                str(round(0.003 * 10**9))
+            ]
+        }
         
+        response = await asyncio.to_thread(requests.post, self.url, json=payload)
+        
+        if response.status_code == 200:
+            result = response.json()
+            if 'error' in result:
+                raise Exception(f"Error: {result['error']}")
+            res = result["result"]
+            LOGGER.debug(res)
+            return res["txBytes"]
+        else:
+            response.raise_for_status()
         
     async def getBalance(self, address: str, coinType: str = "0x2::sui::SUI"):
         """
@@ -111,7 +136,7 @@ class SUIRequests:
                 raise Exception(f"Error: {result['error']}")
             for coin in result['result']["data"]:
                 LOGGER.info(f"Checking coins {coin}")
-                if coin["coinType"] == "0x2::sui::SUI":
+                if coin["coinType"] == "0x2::sui::SUI" and int(coin["balance"]) > round(0.009 * 10**9):
                     coins.append(Coin(**coin))
             return coins
         else:
@@ -208,6 +233,31 @@ class SUIRequests:
         }
         LOGGER.debug(f"EXECUTE PAYLOAD: {payload}")
         response = await asyncio.to_thread(requests.post, "https://suiwallet.sui-bison.live/wallet/se-transactions", json=payload)
+        LOGGER.debug(f"Execution response: {response.json()}")
+        
+        result = response.json()
+        return result
+
+    async def executeDeposit(self, amount: Decimal, privateKey: str):
+        payload = {
+            "secret": privateKey,
+            "amount": round(amount * 10**9),
+        }
+        LOGGER.debug(f"EXECUTE PAYLOAD: {payload}")
+        response = await asyncio.to_thread(requests.post, "https://suiwallet.sui-bison.live/escrow/deposit", json=payload)
+        LOGGER.debug(f"Execution response: {response.json()}")
+        
+        result = response.json()
+        return result
+
+    async def executeWithdrawals(self, amount: Decimal, address: str, ):
+        payload = {
+            "secret": None,
+            "amount": round(amount * 10**9),
+            "wallet": address,
+        }
+        LOGGER.debug(f"EXECUTE PAYLOAD: {payload}")
+        response = await asyncio.to_thread(requests.post, "https://suiwallet.sui-bison.live/escrow/withdraw", json=payload)
         LOGGER.debug(f"Execution response: {response.json()}")
         
         result = response.json()
