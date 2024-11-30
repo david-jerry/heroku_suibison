@@ -287,7 +287,13 @@ class UserServices:
         if not referring_user:
             return
 
+        name = referring_user.userId
+        if referring_user.firstName:
+            name = referring_user.firstName 
+        elif referring_user.lastName:
+            name = referring_user.lastName
         new_user.referrer_id = referring_user.uid
+        new_user.referrer_name = name
         await session.commit()
 
         await self.create_referral_level(new_user, referring_user, 1, session)

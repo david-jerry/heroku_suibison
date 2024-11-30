@@ -411,7 +411,7 @@ async def me(user: Annotated[User, Depends(get_current_user)], session: session)
     status_code=status.HTTP_200_OK,
     response_model=Page[UserRead],
     dependencies=[Depends(get_current_user)],
-    description="Returns a paginated list of all actvities to an admin"
+    description="Returns a paginated list of all referrals to an admin"
 )
 async def user_referrals(user: Annotated[User, Depends(get_current_user)], session: session, level: int):
     LOGGER.debug(f"user: {user}")

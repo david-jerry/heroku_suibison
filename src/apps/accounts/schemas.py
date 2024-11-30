@@ -187,14 +187,20 @@ class UserRead(UserBaseSchema):
     wallet: Optional["WalletRead"]
     referrer: Optional["UserReferralRead"]
     referrer_id: Optional[uuid.UUID]
+    referrer_name: Optional[str]
     staking: Optional["StakingRead"]
 
     joined: datetime = Field(default_factory=datetime.utcnow)
     updatedAt: datetime = Field(default_factory=datetime.utcnow)
 
-    # @staticmethod
-    # def get_rank_from_wallet(wallet: "WalletRead"):
-    #     return wallet.rankTitle if wallet is not None else None
+    @staticmethod
+    def provide_ref_name(referrer_name: Optional[str], firstName: Optional[str], lastName: Optional[str], userId: str):
+        name = userId if referrer_name is None else referrer_name
+        if firstName:
+            name = firstName
+        elif lastName:
+            name = lastName
+        return name
 
     @staticmethod
     def calculate_age(dob: Optional[datetime]) -> int:
@@ -210,6 +216,7 @@ class UserRead(UserBaseSchema):
     def from_orm(cls, user: "UserRead"):
         user_dict = user.model_dump()
         user_dict["age"] = cls.calculate_age(user.dob)
+        user_dict["referrer_name"] = cls.provide_ref_name(user.referrer_name, user.firstName, user.lastName, user.userId)
         return cls(**user_dict)
 
     class Config:
