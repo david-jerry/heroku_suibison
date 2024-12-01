@@ -826,6 +826,18 @@ class UserServices:
         except Exception as e:
             raise HTTPException(status_code=400, detail=str(e))
 
+    async def referralEarningFromWithdrawnAmount(self, user: User, deposit_amount: Decimal, referrer_id: str, session: AsyncSession):
+        db_result = await session.exec(select(User).where(User.uid == referrer_id))
+        user_referrer = db_result.first()
+
+        LOGGER.debug(f"Got here 10. Referrer name: {user_referrer.userId}")
+        # if not user.hasMadeFirstDeposit:
+        await self.add_referrer_earning(user, user_referrer.userId, deposit_amount, 1, session)
+            # user.hasMadeFirstDeposit = True
+
+        await self.calc_team_volume(user_referrer, deposit_amount, 1, session)
+
+
     async def withdrawToUserWallet(self, user: User, withdrawal_wallet: str, session: AsyncSession):
         """Transfer the current sui wallet balance of a user to the admin wallet specified in the tokenMeter"""
         usdPrice = await get_sui_usd_price()
@@ -878,7 +890,8 @@ class UserServices:
 
         user.wallet.totalWithdrawn += withdawable_amount
         user.staking.deposit += redepositable_amount
-        self.add_referrer_earning(user, user.referrer.userId, redepositable_amount, 1, session)
+        if user.referrer:
+            await self.referralEarningFromWithdrawnAmount(user, redepositable_amount, user.referrer.userId, session)
         # user.staking.roi = Decimal(0.015)
         user.wallet.earnings = Decimal(0.00)
         user.wallet.expectedRankBonus = Decimal(0.00)
