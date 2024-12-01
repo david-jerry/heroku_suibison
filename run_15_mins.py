@@ -170,7 +170,7 @@ async def check_ranking():
         for user in users:
             if user.wallet:
                 rankErning, rank = await get_rank(user.totalTeamVolume, user.wallet.totalDeposit, user.totalReferrals)
-                LOGGER.debug(f"{user.firstName}:- Ranking: {rankErning} | Rank: {rank}")
+                LOGGER.debug(f"{user.firstName}:- Ranking: {rankErning} | Rank: {rank} - {user.totalTeamVolume}, {user.wallet.totalDeposit}")
 
                 if not user.rank and rank:
                     if user.joined.date() == user.lastRankEarningAddedAt.date():
