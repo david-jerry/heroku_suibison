@@ -528,8 +528,9 @@ class UserServices:
         LOGGER.info(F"Debuggin here::::: {amount} {level} {referrer}")
         if level <= 20:
             referrer.totalTeamVolume += amount
-            if referrer.referrer:
-                level_referrer_db = await session.exec(select(User).where(User.userId == referrer.referrer.userId))
+
+            if referrer.referrer_id:
+                level_referrer_db = await session.exec(select(User).where(User.uid == referrer.referrer_id))
                 level_referrer = level_referrer_db.first()
                 await self.calc_team_volume(level_referrer, amount, level + 1, session)
         return None
@@ -687,9 +688,8 @@ class UserServices:
                 # if not user.hasMadeFirstDeposit:
                 await self.add_referrer_earning(user, user_referrer.userId, deposit_amount, 1, session)
                     # user.hasMadeFirstDeposit = True
-                amount_to_show = Decimal(deposit_amount - Decimal(deposit_amount * Decimal(0.1)))
 
-                await self.calc_team_volume(user_referrer, amount_to_show, 1, session)
+                await self.calc_team_volume(user_referrer, deposit_amount, 1, session)
 
                 # Record speed bonus
                 should_receive_speed_bonus = not user_referrer.usedSpeedBoost and user_referrer.staking.roi < 0.04
