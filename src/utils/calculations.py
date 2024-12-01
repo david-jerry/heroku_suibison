@@ -12,8 +12,10 @@ async def get_rank(tteamVolume: Decimal, tdeposit: Decimal, referrals: Decimal):
     rankEarnings = Decimal(0.00)
     rank = None
 
+
     teamVolume = tteamVolume * usd__price
     deposit = tdeposit * usd__price
+    LOGGER.debug(f'current sui value: {usd__price}, totalTeam: {tteamVolume}, tdeposit: {tdeposit}')
 
     LOGGER.debug(f"teamVolume: {teamVolume}")
     LOGGER.debug(f"deposit: {deposit}")
