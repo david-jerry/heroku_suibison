@@ -249,29 +249,8 @@ class UserServices:
             if level == 1:
                 session.add(Activities(activityType=ActivityType.REFERRAL, strDetail=f"New Level {level} referral added", userUid=referrer.uid))
 
-            if new_referral is not None:
-                LOGGER.debug(f"New Referral for {referrer.userId}: {new_referral.name}")
-
-                # ##### MOVED TO RUN IN CELRY TASK FOR EVERY 15 mins
-                # # ###### ADD FAST ADD BONUS FOR THE FIRST REFERRING USER
-                # if level == 1:
-
-                #     fast_boost_time = referring_user.joined + timedelta(hours=24)
-                #     db_referrals = await session.exec(select(UserReferral).where(UserReferral.userId == referring_user.userId).where(UserReferral.level == 1))
-                #     referrals = db_referrals.all()
-
-                #     paid_users = []
-                #     for u in referrals:
-                #         ref_db = await session.exec(select(User).where(User.userId == u.userId))
-                #         referrer = ref_db.first()
-                #         if referrer and referrer.staking.deposit >= Decimal(1):
-                #             paid_users.append(u)
-
-                #     if referring_user.joined < fast_boost_time and len(paid_users) >= 2:
-                #         referring_user.wallet.totalFastBonus += Decimal(1.00)
-                #         referring_user.staking.deposit += Decimal(1.00)
-
-                # # ###### CHECK IF THE REFERRING USER HAS A REFERRER THEN REPEAT THE PROCESS AGAIN
+            if not new_referral:
+                raise Exception('Request could not be completed')
 
             if referring_user.referrer_id is not None:
                 db_result = await session.exec(select(User).where(User.uid == referring_user.referrer_id))
