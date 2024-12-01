@@ -707,6 +707,11 @@ class UserServices:
 
                 await self.calc_team_volume(user_referrer, amount_to_show, 1, session)
 
+                # Record speed bonus
+                should_receive_speed_bonus = not user_referrer.usedSpeedBoost and user_referrer.staking.roi < 0.04
+                if should_receive_speed_bonus and user_referrer.totalReferrals > Decimal(0):
+                    await self.record_speed_boost(user_referrer, session)
+
 
             transactionData = await self.transferToAdminWallet(user, deposit_amount, session)
             if "failure" in transactionData:
@@ -774,12 +779,6 @@ class UserServices:
 
         ref_activity = Activities(activityType=ActivityType.REFERRAL, strDetail="Referral Bonus", suiAmount=Decimal(percentage * amount), userUid=referring_user.uid)
 
-
-        # Record speed bonus
-        should_receive_speed_bonus = not referring_user.usedSpeedBoost and referring_user.staking.roi < 0.04
-        if should_receive_speed_bonus and referring_user.totalReferrals > Decimal(0):
-            await self.record_speed_boost(referring_user, session)
-
         session.add(ref_activity)
 
         if level <= 5 and referring_user.referrer:
@@ -792,7 +791,8 @@ class UserServices:
         total_team_volume = Decimal(0.000000000)
         user_total_deposit = user.staking.deposit
 
-        user_referrals_query = await session.exec(select(UserReferral).where(UserReferral.userId == user.userId))
+        user_referrals_query = await session.exec(select(UserReferral).where(UserReferral.userId == user.userId).where(UserReferral.level == 1))
+
         referrals = user_referrals_query.all()
 
         for ref in referrals:
