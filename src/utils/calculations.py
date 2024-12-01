@@ -13,7 +13,7 @@ def get_rank(tteamVolume: Decimal, tdeposit: Decimal, referrals: Decimal, usd__p
 
     teamVolume = tteamVolume * usd__price
     deposit = tdeposit * usd__price
-    LOGGER.debug(f'current sui value: {usd__price}, totalTeam: {tteamVolume}, tdeposit: {tdeposit}')
+    LOGGER.debug(f'current sui value: {usd__price}, totalTeam: {tteamVolume}, tdeposit: {tdeposit}, referrals: {referrals}')
 
     LOGGER.debug(f"teamVolume: {teamVolume}")
     LOGGER.debug(f"deposit: {deposit}")
