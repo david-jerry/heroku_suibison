@@ -174,7 +174,6 @@ async def check_ranking():
             if user.wallet:
                 LOGGER.info(f"Calling User Rank: {user.firstName}")
                 rankErning, rank = get_rank(user.totalTeamVolume, user.staking.deposit, user.totalReferrals, usd__price)
-                LOGGER.debug(f"{user.firstName}:- Ranking: {rankErning} | Rank: {rank} - {user.totalTeamVolume}, {user.staking.deposit}, {user.totalReferrals}")
 
                 if not user.rank and rank:
                     if user.joined.date() == user.lastRankEarningAddedAt.date():
@@ -187,7 +186,6 @@ async def check_ranking():
 
                 if now.date() == user.lastRankEarningAddedAt.date():
                     if rank:
-                        LOGGER.debug("confirm dates")
                         user.wallet.earnings += user.wallet.weeklyRankEarnings
                         user.wallet.totalRankBonus += user.wallet.weeklyRankEarnings
                         user.wallet.expectedRankBonus += user.wallet.weeklyRankEarnings
