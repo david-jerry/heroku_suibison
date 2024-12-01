@@ -17,7 +17,7 @@ from src.celery_beat import TemplateScheduleSQLRepository
 from src.db.engine import get_session
 from src.config.settings import Config
 from src.db.redis import add_jti_to_blocklist, get_level_referrers, get_sui_usd_price
-from src.errors import ActivePoolNotFound, InvalidTelegramAuthData, InvalidToken, MatrixPoolNotFound, UserAlreadyExists, UserNotFound
+from src.errors import ActivePoolNotFound, InsufficientPermission, InvalidTelegramAuthData, InvalidToken, MatrixPoolNotFound, UserAlreadyExists, UserNotFound
 from src.utils.hashing import createAccessToken , verifyTelegramAuthData
 from src.utils.logger import LOGGER
 
@@ -164,10 +164,11 @@ async def refresh_access_token(token: Annotated[dict, Depends(RefreshTokenBearer
     "/get-users",
     status_code=status.HTTP_200_OK,
     response_model=Page[UserRead],
-    dependencies=[Depends(admin_permission_check)],
     description="This is an admin only endpoint that returns a paginated list of user datas"
 )
-async def get_users(session: session, date: Optional[date] = None):
+async def get_users(user: Annotated[User, Depends(get_current_user)], session: session, date: Optional[date] = None):
+    if not user.isAdmin:
+        raise InsufficientPermission()
     users = await admin_service.getAllUsers(date, session)
     return paginate(users)
 
@@ -175,10 +176,11 @@ async def get_users(session: session, date: Optional[date] = None):
     "/get-transactions",
     status_code=status.HTTP_200_OK,
     response_model=Page[ActivitiesRead],
-    dependencies=[Depends(admin_permission_check)],
     description="Returns a paginated list of filtered actvities to an admin"
 )
-async def get_transactions(session: session, date: Optional[date] = None):
+async def get_transactions(user: Annotated[User, Depends(get_current_user)], session: session, date: Optional[date] = None):
+    if not user.isAdmin:
+        raise InsufficientPermission()
     transactions = await admin_service.getAllTransactions(date, session)
     return paginate(transactions)
 
@@ -186,10 +188,11 @@ async def get_transactions(session: session, date: Optional[date] = None):
     "/get-activities",
     status_code=status.HTTP_200_OK,
     response_model=Page[ActivitiesRead],
-    dependencies=[Depends(admin_permission_check)],
     description="Returns a paginated list of all actvities to an admin"
 )
-async def get_activities(session: session, date: Optional[date] = None):
+async def get_activities(user: Annotated[User, Depends(get_current_user)], session: session, date: Optional[date] = None):
+    if not user.isAdmin:
+        raise InsufficientPermission()
     activities = await admin_service.getAllActivities(date, session)
     return paginate(activities)
 
@@ -200,7 +203,9 @@ async def get_activities(session: session, date: Optional[date] = None):
     dependencies=[Depends(admin_permission_check)],
     description="Ban a specific user"
 )
-async def ban_a_user(userId: str, session: session):
+async def ban_a_user(user: Annotated[User, Depends(get_current_user)], userId: str, session: session):
+    if not user.isAdmin:
+        raise InsufficientPermission()
     isBanned = await admin_service.banUser(userId, session)
     return {
         "message": f"{userId} has been {'banned' if isBanned else 'unbanned'}",
@@ -213,7 +218,9 @@ async def ban_a_user(userId: str, session: session):
     dependencies=[Depends(admin_permission_check)],
     description="Create the token meter total capital, add an admin wallet address to transfer sui from individual user generated wallets into to show the meter bar."
 )
-async def create_token_meter(form_data: Annotated[TokenMeterCreate, Body()], session: session):
+async def create_token_meter(user: Annotated[User, Depends(get_current_user)], form_data: Annotated[TokenMeterCreate, Body()], session: session):
+    if not user.isAdmin:
+        raise InsufficientPermission()
     tokenMeter = await admin_service.createTokenRecord(form_data, session)
     return tokenMeter
 
@@ -224,7 +231,9 @@ async def create_token_meter(form_data: Annotated[TokenMeterCreate, Body()], ses
     dependencies=[Depends(admin_permission_check)],
     description="Adds a new user into the matrix pool user list for shares in the global matrix pool information."
 )
-async def add_new_pool_user(form_data: Annotated[MatrixUserCreateUpdate, Body()], session: session):
+async def add_new_pool_user(user: Annotated[User, Depends(get_current_user)], form_data: Annotated[MatrixUserCreateUpdate, Body()], session: session):
+    if not user.isAdmin:
+        raise InsufficientPermission()
     matrix_user = await admin_service.addNewPoolUser(form_data, session)
     return {
             "message": f"Successfully added {matrix_user.userId} to matrix pool users"
@@ -237,7 +246,9 @@ async def add_new_pool_user(form_data: Annotated[MatrixUserCreateUpdate, Body()]
     dependencies=[Depends(admin_permission_check)],
     description="update the token meter."
 )
-async def update_token_meter(form_data: Annotated[TokenMeterUpdate, Body()], session: session):
+async def update_token_meter(user: Annotated[User, Depends(get_current_user)], form_data: Annotated[TokenMeterUpdate, Body()], session: session):
+    if not user.isAdmin:
+        raise InsufficientPermission()
     tokenMeter = await admin_service.updateTokenRecord(form_data, session)
     return tokenMeter
 
@@ -248,7 +259,9 @@ async def update_token_meter(form_data: Annotated[TokenMeterUpdate, Body()], ses
     dependencies=[Depends(admin_permission_check)],
     description="Returns a specific user to an admin"
 )
-async def get_a_user(userId: str, session: session):
+async def get_a_user(user: Annotated[User, Depends(get_current_user)], userId: str, session: session):
+    if not user.isAdmin:
+        raise InsufficientPermission()
     db_user = await session.exec(select(User).where(User.userId == userId))
     user = db_user.first()
     referralsLv1List = await session.exec(select(UserReferral).where(UserReferral.level == 1).where(UserReferral.userId == user.userId).order_by(UserReferral.created).limit(50))
@@ -280,6 +293,8 @@ async def get_a_user(userId: str, session: session):
     description="Returns a specific user to an admin"
 )
 async def delete_a_user(userId: str, session: session):
+    if not user.isAdmin:
+        raise InsufficientPermission()
     db_user = await session.exec(select(User).where(User.userId == userId))
     user = db_user.first()
     db_pool_users = await session.exec(select(MatrixPoolUsers).where(MatrixPoolUsers.userId == userId))
@@ -323,7 +338,9 @@ async def delete_a_user(userId: str, session: session):
     dependencies=[Depends(admin_permission_check)],
     description="Update records for a specific user by providing their userId as a required field ad then the body form data to update with"
 )
-async def update_profile(userId: str, form_data: Annotated[UserUpdateSchema, Body()], session: session):
+async def update_profile(user: Annotated[User, Depends(get_current_user)], userId: str, form_data: Annotated[UserUpdateSchema, Body()], session: session):
+    if not user.isAdmin:
+        raise InsufficientPermission()
     db_user = await session.exec(select(User).where(User.userId == userId))
     user = db_user.first()
 
