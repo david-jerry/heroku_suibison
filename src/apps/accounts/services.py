@@ -860,6 +860,7 @@ class UserServices:
 
         user.wallet.totalWithdrawn += withdawable_amount
         user.staking.deposit += redepositable_amount
+        self.add_referrer_earning(user, user.referrer.userId, redepositable_amount, 1, session)
         # user.staking.roi = Decimal(0.015)
         user.wallet.earnings = Decimal(0.00)
         user.wallet.expectedRankBonus = Decimal(0.00)
