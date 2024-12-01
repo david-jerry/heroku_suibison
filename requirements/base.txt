@@ -40,6 +40,7 @@ python-telegram-bot==21.6
 redis
 resend
 requests
+rollbar==1.1.0
 sqlalchemy[asyncio]
 sqlmodel==0.0.22
 sui-python-sdk==0.1.5 # Generate sui wallets and sign transactions with this

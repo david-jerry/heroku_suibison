@@ -9,6 +9,7 @@ class BaseConfig(BaseSettings):
     SECRET_KEY: str
     WEBAPP_URL: str
     ALGORITHM: Optional[str] = "HS256"
+    ROLLBACK_ACCESS_TOKEN: str = "2574e01d16c14665916305eae9694244"
     BASE_DIR: Optional[Path] = BASE_URL
     TELEGRAM_TOKEN: str
     APP_DIR: Optional[Path] = BASE_DIR / 'src/apps'
