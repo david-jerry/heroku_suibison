@@ -237,6 +237,7 @@ class UserServices:
                 name = f"{new_user.firstName}"
 
             new_referral = UserReferral(
+                uid = uuid.uuid4(),
                 level=level,
                 name=name,
                 reward=Decimal(0.00),
@@ -247,7 +248,6 @@ class UserServices:
             session.add(new_referral)
             if level == 1:
                 session.add(Activities(activityType=ActivityType.REFERRAL, strDetail=f"New Level {level} referral added", userUid=referrer.uid))
-            await session.commit()
 
             if new_referral is not None:
                 LOGGER.debug(f"New Referral for {referrer.userId}: {new_referral.name}")
@@ -273,11 +273,12 @@ class UserServices:
 
                 # # ###### CHECK IF THE REFERRING USER HAS A REFERRER THEN REPEAT THE PROCESS AGAIN
 
-            if referring_user.referrer is not None:
-                db_result = await session.exec(select(User).where(User.userId == referring_user.referrer.userId))
+            if referring_user.referrer_id is not None:
+                db_result = await session.exec(select(User).where(User.uid == referring_user.referrer_id))
                 referrers_referrer = db_result.first()
-                new_level = level + 1
-                await self.create_referral_level(new_user, referrers_referrer, new_level, session)
+                if referrers_referrer:
+                    new_level = level + 1
+                    await self.create_referral_level(new_user, referrers_referrer, new_level, session)
         return None
 
     async def create_referrer(self, referrer_userId: Optional[str], new_user: User, session: AsyncSession):
@@ -294,7 +295,6 @@ class UserServices:
             name = referring_user.lastName
         new_user.referrer_id = referring_user.uid
         new_user.referrer_name = name
-        await session.commit()
 
         await self.create_referral_level(new_user, referring_user, 1, session)
 
@@ -314,6 +314,7 @@ class UserServices:
 
         if active_matrix_pool_or_new is None:
             active_matrix_pool_or_new = MatrixPool(
+                uid = uuid.uuid4(),
                 totalReferrals=1,
                 startDate=now,
                 endDate=now + timedelta(days=7)
@@ -434,75 +435,81 @@ class UserServices:
         return accessToken, refreshToken, user
 
     async def register_new_user(self, referrer_userId: Optional[str], form_data: UserCreateOrLoginSchema, session: AsyncSession) -> User:
-        user = await user_exists_check(form_data.userId, session)
-        LOGGER.debug(f"User Check Found: {user}")
+        try:
+            user = await user_exists_check(form_data.userId, session)
+            LOGGER.debug(f"User Check Found: {user}")
 
-        # working with existing user
-        if user is not None:
-            if user.isBlocked:
-                raise UserBlocked()
+            # working with existing user
+            if user is not None:
+                if user.isBlocked:
+                    raise UserBlocked()
 
+                accessToken = createAccessToken(
+                    user_data={
+                        "userId": user.userId,
+                    },
+                    expiry=timedelta(seconds=Config.ACCESS_TOKEN_EXPIRY)
+                )
+                refreshToken = createAccessToken(
+                    user_data={
+                        "userId": user.userId,
+                    },
+                    refresh=True,
+                    expiry=timedelta(days=7)
+                )
+
+                return accessToken, refreshToken, user
+
+
+            # working with new user
+            new_user = User(
+                uid=uuid.uuid4(),
+                userId=form_data.userId,
+                firstName=form_data.firstName,
+                lastName=form_data.lastName,
+                phoneNumber=form_data.phoneNumber,
+                image=form_data.image,
+                isAdmin=False,
+            )
+            session.add(new_user)
+
+            if referrer_userId is not None:
+                LOGGER.info(f"CREATING A NEW REFERRAL FOR: {referrer_userId}")
+                await self.create_referrer(referrer_userId, new_user, session)
+
+            stake = await self.create_staking_account(new_user, session)
+            LOGGER.debug(f"Stake:: {stake}")
+
+            # Create an activity record for this new user
+            new_activity = Activities(activityType=ActivityType.WELCOME, strDetail="Welcome to SUI-Bison", userUid=new_user.uid)
+            session.add(new_activity)
+
+            new_wallet = await self.create_wallet(new_user, session)
+            LOGGER.debug(f"NEW WALLET:: {new_wallet}")
+
+            await session.commit()
+            await session.refresh(new_user)
+
+            # generate access and refresh token so long the telegram init data is valid
             accessToken = createAccessToken(
                 user_data={
-                    "userId": user.userId,
+                    "userId": new_user.userId,
                 },
                 expiry=timedelta(seconds=Config.ACCESS_TOKEN_EXPIRY)
             )
             refreshToken = createAccessToken(
                 user_data={
-                    "userId": user.userId,
+                    "userId": new_user.userId,
                 },
                 refresh=True,
                 expiry=timedelta(days=7)
             )
 
-            return accessToken, refreshToken, user
-
-
-        # working with new user
-        new_user = User(
-            userId=form_data.userId,
-            firstName=form_data.firstName,
-            lastName=form_data.lastName,
-            phoneNumber=form_data.phoneNumber,
-            image=form_data.image,
-            isAdmin=False,
-        )
-        session.add(new_user)
-
-        if referrer_userId is not None:
-            LOGGER.info(f"CREATING A NEW REFERRAL FOR: {referrer_userId}")
-            await self.create_referrer(referrer_userId, new_user, session)
-
-        stake = await self.create_staking_account(new_user, session)
-        LOGGER.debug(f"Stake:: {stake}")
-
-        # Create an activity record for this new user
-        new_activity = Activities(activityType=ActivityType.WELCOME, strDetail="Welcome to SUI-Bison", userUid=new_user.uid)
-        session.add(new_activity)
-
-        new_wallet = await self.create_wallet(new_user, session)
-        LOGGER.debug(f"NEW WALLET:: {new_wallet}")
-
-        await session.commit()
-        await session.refresh(new_user)
-
-        # generate access and refresh token so long the telegram init data is valid
-        accessToken = createAccessToken(
-            user_data={
-                "userId": new_user.userId,
-            },
-            expiry=timedelta(seconds=Config.ACCESS_TOKEN_EXPIRY)
-        )
-        refreshToken = createAccessToken(
-            user_data={
-                "userId": new_user.userId,
-            },
-            refresh=True,
-            expiry=timedelta(days=7)
-        )
-
-        return accessToken, refreshToken, new_user
+            return accessToken, refreshToken, new_user
+        except Exception as e:
+            LOGGER.error(e)
+            await session.rollback()
+            raise e
 
     async def return_user_by_userId(self, userId: int, session: AsyncSession):
         db_result = await session.exec(select(User).where(User.userId == userId))
