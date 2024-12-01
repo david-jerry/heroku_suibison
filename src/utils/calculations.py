@@ -8,42 +8,88 @@ from src.utils.logger import LOGGER
 
 
 def get_rank(tteamVolume: Decimal, tdeposit: Decimal, referrals: Decimal, usd__price):
-    rankEarnings = Decimal(0.00)
+    rank_earnings = Decimal(0.00)
     rank = None
 
-    teamVolume = tteamVolume * usd__price
+    team_volume = tteamVolume * usd__price
     deposit = tdeposit * usd__price
-    LOGGER.debug(f'current sui value: {usd__price}, totalTeam: {tteamVolume}, tdeposit: {tdeposit}, referrals: {referrals}')
 
-    LOGGER.debug(f"teamVolume: {teamVolume}")
-    LOGGER.debug(f"deposit: {deposit}")
+    ranks = [
+        {
+            "name": "Leader",
+            "min_volume": Decimal(1000),
+            "max_volume": Decimal(5000),
+            "min_deposit": Decimal(50),
+            "min_referrals": 3,
+            "earnings": Decimal(25),
+        },
+        {
+            "name": "Bison King",
+            "min_volume": Decimal(5000),
+            "max_volume": Decimal(20000),
+            "min_deposit": Decimal(100),
+            "min_referrals": 5,
+            "earnings": Decimal(100),
+        },
+        {
+            "name": "Bison Hon",
+            "min_volume": Decimal(20000),
+            "max_volume": Decimal(100000),
+            "min_deposit": Decimal(500),
+            "min_referrals": 10,
+            "earnings": Decimal(250),
+        },
+        {
+            "name": "Accumulator",
+            "min_volume": Decimal(100000),
+            "max_volume": Decimal(250000),
+            "min_deposit": Decimal(2000),
+            "min_referrals": 10,
+            "earnings": Decimal(1000),
+        },
+        {
+            "name": "Bison Diamond",
+            "min_volume": Decimal(250000),
+            "max_volume": Decimal(500000),
+            "min_deposit": Decimal(5000),
+            "min_referrals": 10,
+            "earnings": Decimal(3000),
+        },
+        {
+            "name": "Bison Legend",
+            "min_volume": Decimal(500000),
+            "max_volume": Decimal(1000000),
+            "min_deposit": Decimal(10000),
+            "min_referrals": 10,
+            "earnings": Decimal(5000),
+        },
+        {
+            "name": "Supreme Bison",
+            "min_volume": Decimal(1000000),
+            "max_volume": None,  # No upper limit for this rank
+            "min_deposit": Decimal(150000),
+            "min_referrals": 10,
+            "earnings": Decimal(7000),
+        },
+    ]
 
-    if teamVolume >= Decimal(1000) and teamVolume < Decimal(5000) and deposit >= Decimal(50) and referrals >= 3:
-        rankEarnings = Decimal(25)
-        rank = "Leader"
-    elif teamVolume >= Decimal(5000) and teamVolume < Decimal(20000) and deposit >= Decimal(100) and referrals >= 5:
-        rankEarnings = Decimal(100)
-        rank = "Bison King"
-    elif teamVolume >= Decimal(20000) and teamVolume < Decimal(100000) and deposit >= Decimal(500) and referrals >= 10:
-        rankEarnings = Decimal(250)
-        rank = "Bison Hon"
-    elif teamVolume >= Decimal(100000) and teamVolume < Decimal(250000) and deposit >= Decimal(2000) and referrals >= 10:
-        rankEarnings = Decimal(1000)
-        rank = "Accumulator"
-    elif teamVolume >= Decimal(250000) and teamVolume < Decimal(500000) and deposit >= Decimal(5000) and referrals >= 10:
-        rankEarnings = Decimal(3000)
-        rank = "Bison Diamond"
-    elif teamVolume >= Decimal(500000) and teamVolume < Decimal(1000000) and deposit >= Decimal(10000) and referrals >= 10:
-        rankEarnings = Decimal(5000)
-        rank = "Bison Legend"
-    elif teamVolume >= Decimal(1000000) and deposit >= Decimal(150000) and referrals >= 10:
-        rankEarnings = Decimal(7000)
-        rank = "Supreme Bison"
+    for r in ranks:
+        if (
+            team_volume >= r["min_volume"]
+            and (r["max_volume"] is None or team_volume < r["max_volume"])
+            and deposit >= r["min_deposit"]
+            and referrals >= r["min_referrals"]
+        ):
+            rank = r["name"]
+            rank_earnings = r["earnings"]
+
+        elif rank is not None:
+            break
 
     if rank:
-        rankEarnings = rankEarnings / usd__price
+        rank_earnings = rank_earnings / usd__price
 
-    return rankEarnings, rank
+    return rank_earnings, rank
 
 async def matrix_share(matrixUser: MatrixPoolUsers):
     percentageShare = ( matrixUser.referralsAdded / matrixUser.matrixPool.totalReferrals) * 100
