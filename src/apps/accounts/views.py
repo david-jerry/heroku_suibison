@@ -145,7 +145,7 @@ async def admin_login(request: Request, form_data: Annotated[AdminLogin, Body(..
     response_model=AccessToken,
     description="Returns a specific user by providing their userId"
 )
-async def refresh_access_token(token: Annotated[User, Depends(RefreshTokenBearer())], session: session):
+async def refresh_access_token(token: Annotated[dict, Depends(RefreshTokenBearer())], session: session):
     expiry_timestamp = token["exp"]
     userId = token["user"]["userId"]
 
@@ -169,7 +169,7 @@ async def refresh_access_token(token: Annotated[User, Depends(RefreshTokenBearer
 )
 async def get_users(session: session, date: Optional[date] = None):
     users = await admin_service.getAllUsers(date, session)
-    return users
+    return paginate(users)
 
 @auth_router.get(
     "/get-transactions",

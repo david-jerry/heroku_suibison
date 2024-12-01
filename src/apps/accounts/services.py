@@ -10,8 +10,7 @@ from typing import Annotated, Any, List, Optional
 from uuid import UUID
 
 from fastapi import BackgroundTasks, Depends, File, HTTPException, Request, UploadFile
-from fastapi_pagination import Page
-from fastapi_pagination.ext.sqlalchemy import paginate
+from fastapi_pagination import Page, paginate
 
 from apscheduler.schedulers.background import BackgroundScheduler  # runs tasks in the background
 from apscheduler.triggers.cron import CronTrigger  # allows us to specify a recurring time for execution
@@ -143,23 +142,23 @@ class AdminServices:
 
     async def getAllTransactions(self, date: date, session: AsyncSession):
         if date is not None:
-            transactions = await session.exec(select(Activities).where(Activities.activityType == ActivityType.DEPOSIT, Activities.activityType == ActivityType.WITHDRAWAL).where(Activities.created.date() >= date).order_by(Activities.created))
+            transactions = await session.exec(select(Activities).where(Activities.activityType == ActivityType.DEPOSIT, Activities.activityType == ActivityType.WITHDRAWAL).where(Activities.created.date() >= date).order_by(Activities.created.desc()))
             return transactions.all()
-        transactions = await session.exec(select(Activities).where(Activities.activityType == ActivityType.DEPOSIT, Activities.activityType == ActivityType.WITHDRAWAL).order_by(Activities.created))
+        transactions = await session.exec(select(Activities).where(Activities.activityType == ActivityType.DEPOSIT, Activities.activityType == ActivityType.WITHDRAWAL).order_by(Activities.created.desc()))
         return transactions.all()
 
     async def getAllActivities(self, date: Optional[date], session: AsyncSession):
         if date is not None:
-            allActivities = await session.exec(select(Activities).where(Activities.created >= now).order_by(Activities.created))
+            allActivities = await session.exec(select(Activities).where(Activities.created >= now).order_by(Activities.created.desc()))
             return allActivities.all()
-        allActivities = await session.exec(select(Activities).order_by(Activities.created))
+        allActivities = await session.exec(select(Activities).order_by(Activities.created.desc()))
         return allActivities.all()
 
     async def getAllUsers(self, date: date, session: AsyncSession):
         if date is not None:
-            users: Page[User] = await paginate(session, select(User).where(User.isSuperuser == False).where(User.joined.date() >= date).order_by(User.joined, User.firstName))
+            users = await session.exec(select(User).where(User.isSuperuser == False).where(User.joined.date() >= date).order_by(User.joined.desc(), User.firstName.desc()))
             return users
-        users = await paginate(session, select(User).where(User.isSuperuser == False).order_by(User.joined, User.firstName))
+        users = await session.exec(select(User).where(User.isSuperuser == False).order_by(User.joined.desc(), User.firstName.desc()))
         return users
 
     async def banUser(self, userId: str, session: AsyncSession) -> bool:
@@ -318,7 +317,6 @@ class UserServices:
         else:
             mp_user.referralsAdded += 1
             mp_user.matrixShare += 1
-
 
     async def create_wallet(self, user: User, session: AsyncSession):
         # mnemonic_phrase = Mnemonic("english").generate(strength=128)
