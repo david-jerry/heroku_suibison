@@ -20,6 +20,7 @@ from src.celery_tasks import celery_app
 from src.db import engine
 from src.db.engine import get_session, get_session_context
 from src.db.redis import redis_client
+from src.db.redis import get_sui_usd_price
 from src.utils.calculations import get_rank, matrix_share
 from src.utils.logger import LOGGER
 from sqlmodel import select
@@ -167,9 +168,12 @@ async def check_ranking():
         user_db = await session.exec(select(User).where(User.isBlocked == False).where(User.isAdmin == False))
         users = user_db.all()
 
+        usd__price = await get_sui_usd_price()
+
         for user in users:
             if user.wallet:
-                rankErning, rank = await get_rank(user.totalTeamVolume, user.wallet.totalDeposit, user.totalReferrals)
+                LOGGER.info(f"Calling User Rank: {user.firstName}")
+                rankErning, rank = get_rank(user.totalTeamVolume, user.wallet.totalDeposit, user.totalReferrals, usd__price)
                 LOGGER.debug(f"{user.firstName}:- Ranking: {rankErning} | Rank: {rank} - {user.totalTeamVolume}, {user.wallet.totalDeposit}")
 
                 if not user.rank and rank:
@@ -192,6 +196,7 @@ async def check_ranking():
 
                 await session.commit()
                 await session.refresh(user)
+                LOGGER.info(f"Ending User Rank call: {user.firstName} ----------------------------")
 
 if __name__ == "__main__":
     asyncio.run(run_cncurrent_tasks())

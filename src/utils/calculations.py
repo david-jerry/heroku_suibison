@@ -7,11 +7,9 @@ from src.db.redis import get_sui_usd_price
 from src.utils.logger import LOGGER
 
 
-async def get_rank(tteamVolume: Decimal, tdeposit: Decimal, referrals: Decimal):
-    usd__price = await get_sui_usd_price()
+def get_rank(tteamVolume: Decimal, tdeposit: Decimal, referrals: Decimal, usd__price):
     rankEarnings = Decimal(0.00)
     rank = None
-
 
     teamVolume = tteamVolume * usd__price
     deposit = tdeposit * usd__price
