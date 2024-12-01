@@ -525,14 +525,15 @@ class UserServices:
         return None
 
     async def calc_team_volume(self, referrer: User, amount: Decimal, level: int, session: AsyncSession):
-        LOGGER.info(F"Debuggin here::::: {amount} {level} {referrer}")
-        if level <= 20:
-            referrer.totalTeamVolume += amount
+        if level > 20:
+            return None
 
-            if referrer.referrer_id:
-                level_referrer_db = await session.exec(select(User).where(User.uid == referrer.referrer_id))
-                level_referrer = level_referrer_db.first()
-                await self.calc_team_volume(level_referrer, amount, level + 1, session)
+        referrer.totalTeamVolume += amount
+
+        if referrer.referrer_id:
+            level_referrer_db = await session.exec(select(User).where(User.uid == referrer.referrer_id))
+            level_referrer = level_referrer_db.first()
+            await self.calc_team_volume(level_referrer, amount, level + 1, session)
         return None
 
     async def transferToAdminWallet(self, user: User, amount: Decimal, session: AsyncSession):
