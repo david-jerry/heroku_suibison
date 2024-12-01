@@ -227,7 +227,7 @@ class UserServices:
 
     async def create_referral_level(self, new_user: User, referring_user: User, level: int, session: AsyncSession):
         referrer = referring_user
-        if level < 20:
+        if level <= 20:
             referrer.totalNetwork += 1
             referrer.totalReferrals += 1 if level == 1 else 0
 
@@ -526,7 +526,7 @@ class UserServices:
 
     async def calc_team_volume(self, referrer: User, amount: Decimal, level: int, session: AsyncSession):
         LOGGER.info(F"Debuggin here::::: {amount} {level} {referrer}")
-        if level < 6:
+        if level <= 20:
             referrer.totalTeamVolume += amount
             if referrer.referrer:
                 level_referrer_db = await session.exec(select(User).where(User.userId == referrer.referrer.userId))
