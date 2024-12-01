@@ -86,6 +86,17 @@ app = FastAPI(
     redoc_url=f"/{version}",
 )
 
+# Add an /error endpoint to cause an uncaught exception
+async def localfunc(arg1, arg2, arg3):
+    # Both local variables and function arguments will be sent to Rollbar
+    # and available in the UI
+    localvar = 'local variable'
+    # cause_error_with_local_variables
+
+@app.get('/')
+async def read_error():
+    await localfunc('func_arg1', 'func_arg2', 1)
+    
 register_all_errors(app)
 
 register_middleware(app)
