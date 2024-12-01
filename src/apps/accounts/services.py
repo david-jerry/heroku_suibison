@@ -718,34 +718,39 @@ class UserServices:
     async def add_referrer_earning(self, referral: User, referrer: Optional[str], amount: Decimal, level: int, session: AsyncSession):
         LOGGER.debug(f"executing referral earning calculations, level: {level}, referrerId: {referrer}")
 
-        db_result = await session.exec(select(User).where(User.userId == referrer))
+        if level > 5:
+            LOGGER.debug("Reached the maximum referral level.")
+            return None
 
+        db_result = await session.exec(select(User).where(User.userId == referrer))
         referring_user = db_result.first()
 
         if not referring_user:
             LOGGER.debug(f"NO REFERRER TO GIVE BONUS TO")
-            return None
+            raise Exception("Incorrect referring user object")
 
         LOGGER.debug(f"passed user check:: {referring_user.userId}, referrer referrer: {referring_user.referrer.userId if referring_user.referrer else None}")
 
-        # add referrals and their rewards
         rf_db = await session.exec(select(UserReferral).where(UserReferral.theirUserId == referral.userId).where(UserReferral.userId == referrer))
         referral_to_update = rf_db.first()
 
         if not referral_to_update:
             LOGGER.debug(f"NO REFERRER TO GIVE BONUS TO 2")
-            return None
+            raise Exception("Incorrect referral level tree")
 
-        # ####### Calculate Referral Bonuses
-        percentage = Decimal(0.1)
-        if level == 2:
-            percentage = Decimal(0.05)
-        elif level == 3:
-            percentage = Decimal(0.03)
-        elif level == 4:
-            percentage = Decimal(0.02)
-        elif level == 5:
-            percentage = Decimal(0.01)
+
+        if referral_to_update.level != level:
+            LOGGER.debug(f"KKKKKKKKKKKK::::::IIIIII::::::: {level}, {referral_to_update.level} {referral_to_update.theirUserId}")
+            raise Exception("Retrieved referral for update does not match level")
+
+        level_percentages = {
+            1: Decimal(0.1),
+            2: Decimal(0.05),
+            3: Decimal(0.03),
+            4: Decimal(0.02),
+            5: Decimal(0.01),
+        }
+        percentage = level_percentages.get(level)
 
         LOGGER.debug(f"REFERRAL TO UPDATE: {referral_to_update.user.firstName}")
         referral_to_update.stake += amount
@@ -765,8 +770,20 @@ class UserServices:
 
         session.add(ref_activity)
 
-        if level <= 5 and referring_user.referrer:
-            return await self.add_referrer_earning(referral, referring_user.referrer.userId, amount, level + 1, session)
+        if referring_user.referrer:
+            db_result = await session.exec(select(User).where(User.uid == referring_user.referrer_id))
+            user_referrer = db_result.first()
+
+            if user_referrer:
+                await self.add_referrer_earning(
+                    referral=referral,
+                    referrer=user_referrer.userId,
+                    amount=amount,
+                    level=level + 1,
+                    session=session,
+                )
+        else:
+            LOGGER.debug(f"No further referrer found for user {referring_user.userId}.")
         return None
 
     # ##### TODO:END
