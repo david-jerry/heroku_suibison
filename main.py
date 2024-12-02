@@ -91,7 +91,7 @@ async def localfunc(arg1, arg2, arg3):
     # Both local variables and function arguments will be sent to Rollbar
     # and available in the UI
     localvar = 'local variable'
-    # cause_error_with_local_variables
+    cause_error_with_local_variables
 
 @app.get('/')
 async def read_error():
