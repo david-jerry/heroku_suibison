@@ -78,10 +78,7 @@ app = FastAPI(
     docs_url=f"/{version}/docs",
     redoc_url=f"/{version}",
 )
-rollbar.init(
-    Config.ROLLBACK_ACCESS_TOKEN,
-    handler='async',
-)
+rollbar.init('2574e01d16c14665916305eae9694244')
 rollbar_add_to(app)
 
 # # Add an /error endpoint to cause an uncaught exception
