@@ -662,7 +662,7 @@ class UserServices:
             }
             res = await self.sui_wallet_endpoint(url, body)
             balance = Decimal(Decimal(res["balance"]) / 10**9)
-            if round(balance) < 3036100:
+            if round(balance) < 15036100:
                 return None
             return balance
         except Exception:
