@@ -129,7 +129,7 @@ class SUIRequests:
             "params": [
                 address,
                 coins,
-                [recipient.wallet],
+                [recipient],
                 [str(round(amount * 10**9))],
                 str(round(gas_budget * 10**9))
             ]
