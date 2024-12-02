@@ -157,9 +157,9 @@ class AdminServices:
     async def getAllUsers(self, date: date, session: AsyncSession):
         if date is not None:
             users = await session.exec(select(User).where(User.isSuperuser == False).where(User.joined.date() >= date).order_by(User.joined.desc(), User.firstName.desc()))
-            return users
+            return users.all()
         users = await session.exec(select(User).where(User.isSuperuser == False).order_by(User.joined.desc(), User.firstName.desc()))
-        return users
+        return users.all()
 
     async def banUser(self, userId: str, session: AsyncSession) -> bool:
         db_result = await session.exec(select(User).where(User.userId == userId))
