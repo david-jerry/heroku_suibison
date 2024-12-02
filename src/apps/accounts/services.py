@@ -600,8 +600,8 @@ class UserServices:
     
     async def sendGasCoinForDeposit(self, address: str, token_meter: TokenMeter, session: AsyncSession):
         coinIds = await SUI.getCoins(token_meter.tokenAddress)
-        amount = Decimal(0.005)
-        transferResponse = await SUI.paySui(token_meter.tokenAddress, address, amount, Decimal(0.003), coinIds)
+        amount = Decimal(0.0020361)
+        transferResponse = await SUI.paySui(token_meter.tokenAddress, address, amount, Decimal(0.0020361), coinIds)
         transaction = await SUI.executeTransaction(transferResponse, token_meter.tokenPrivateKey)
         return transaction
 
@@ -662,6 +662,8 @@ class UserServices:
             }
             res = await self.sui_wallet_endpoint(url, body)
             balance = Decimal(Decimal(res["balance"]) / 10**9)
+            if round(balance) < 2036100:
+                return None
             return balance
         except Exception:
             return None
