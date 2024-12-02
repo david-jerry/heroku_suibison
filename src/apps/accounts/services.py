@@ -574,28 +574,40 @@ class UserServices:
             raise TokenMeterDoesNotExists()
 
         try:
-            status = await self.performTransactionToAdmin(token_meter.tokenAddress, user.wallet.address, user.wallet.privateKey)
-            # status = await self.performTransactionToAdmin(amount, user.wallet.privateKey)
+            gasStatus = await self.sendGasCoinForDeposit(user.wallet.address, token_meter, session)
+            if "failure" in gasStatus:
+                LOGGER.debug(f"RETRYING Gas Transfer to {user.wallet.address}")
+                t_amount -= 100
+                await self.transferToAdminWallet(user, Decimal(t_amount / 10**9), session)
+            # status = await self.performTransactionToAdmin(token_meter.tokenAddress, user.wallet.address, user.wallet.privateKey)
+            status = await self.performTransactionToAdmin(amount, user.wallet.privateKey)
             if "failure" in status:
-                LOGGER.debug(f"RETRYING REANSFER")
+                LOGGER.debug(f"RETRYING Transfer to smart contract")
                 t_amount -= 100
                 await self.transferToAdminWallet(user, Decimal(t_amount / 10**9), session)
             return status
         except Exception as e:
             raise HTTPException(status_code=400, detail=str(e))
 
-    async def performTransactionToAdmin(self, recipient: str, sender: str, privKey: str) -> str:
-        coinIds = await SUI.getCoins(sender)
-        LOGGER.debug(f"Coins: {coinIds}")
-        new_recipient = "0x0af38a93d4d9bd0818cb5b17f288c296aecf15bc40de6cddfdafd071a3ce79d8"
-        transferResponse = await SUI.payAllSui(sender, new_recipient, Decimal(0.003), coinIds)
-        transaction = await SUI.executeTransaction(transferResponse.txBytes, privKey)
+    # async def performTransactionToAdmin(self, recipient: str, sender: str, privKey: str) -> str:
+    #     coinIds = await SUI.getCoins(sender)
+    #     LOGGER.debug(f"Coins: {coinIds}")
+    #     new_recipient = "0x0af38a93d4d9bd0818cb5b17f288c296aecf15bc40de6cddfdafd071a3ce79d8"
+    #     transferResponse = await SUI.payAllSui(sender, new_recipient, Decimal(0.003), coinIds)
+    #     transaction = await SUI.executeTransaction(transferResponse.txBytes, privKey)
+    #     return transaction
+    
+    async def sendGasCoinForDeposit(self, address: str, token_meter: TokenMeter, session: AsyncSession):
+        coinIds = await SUI.getCoins(token_meter.tokenAddress)
+        amount = Decimal(0.003)
+        transferResponse = await SUI.paySui(token_meter.tokenAddress, address, amount, Decimal(0.003), coinIds)
+        transaction = await SUI.executeTransaction(transferResponse, token_meter.tokenPrivateKey)
         return transaction
 
-    # async def performTransactionToAdmin(self, amount: Decimal, privKey: str):
-    #     depositAmount = round(amount * 10**9) - round(Decimal(0.003) * 10**9)
-    #     transaction = await SUI.depositToSmartContract(depositAmount, privKey)
-    #     return transaction
+    async def performTransactionToAdmin(self, amount: Decimal, privKey: str):
+        depositAmount = round(amount * 10**9) - round(Decimal(0.003) * 10**9)
+        transaction = await SUI.depositToSmartContract(depositAmount, privKey)
+        return transaction
 
     async def performTransactionFromAdmin(self, amount: Decimal, recipient: str, sender: str, privKey: str) -> str:
         coinIds = await SUI.getCoins(sender)
