@@ -2,9 +2,15 @@ from __future__ import absolute_import, unicode_literals
 
 """Custom logger configuration."""
 from logging import Logger
+import logging
 from sys import stdout
 
 from loguru import logger as custom_logger # type: ignore
+
+import rollbar
+from rollbar.contrib.fastapi import ReporterMiddleware as RollbarMiddleware
+from rollbar.logger import RollbarHandler
+
 
 
 def log_formatter(record: dict) -> str:

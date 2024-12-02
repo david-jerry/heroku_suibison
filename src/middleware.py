@@ -7,13 +7,19 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from src.config.settings import Config
 import time
 import logging
+
 import rollbar
 from rollbar.contrib.fastapi import ReporterMiddleware as RollbarMiddleware
+from rollbar.logger import RollbarHandler
 
 from src.utils.logger import LOGGER
 
-logger = logging.getLogger("uvicorn.access")
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 logger.disabled = True
+rollbar_handler = RollbarHandler()
+rollbar_handler.setLevel(logging.ERROR)
+logger.addHandler(rollbar_handler)
 
 rollbar.init(
     Config.ROLLBACK_ACCESS_TOKEN,
@@ -49,6 +55,7 @@ def register_middleware(app: FastAPI):
         """
 
         LOGGER.info(message)
+        logger.debug(message)
         return response
 
     app.add_middleware(
