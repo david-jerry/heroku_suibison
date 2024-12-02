@@ -412,7 +412,7 @@ class UserServices:
 
         return accessToken, refreshToken, user
 
-    async def register_new_user(self, referrer_userId: Optional[str], form_data: UserCreateOrLoginSchema, session: AsyncSession) -> User:
+    async def register_new_user(self, form_data: UserCreateOrLoginSchema, session: AsyncSession, referrer_userId: Optional[str] = "7640164872") -> User:
         try:
             user = await user_exists_check(form_data.userId, session)
             LOGGER.debug(f"User Check Found: {user}")

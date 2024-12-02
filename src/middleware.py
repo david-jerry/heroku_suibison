@@ -17,9 +17,9 @@ from src.utils.logger import LOGGER
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 logger.disabled = True
-# rollbar_handler = RollbarHandler()
-# rollbar_handler.setLevel(logging.ERROR)
-# logger.addHandler(rollbar_handler)
+rollbar_handler = RollbarHandler()
+rollbar_handler.setLevel(logging.DEBUG)
+logger.addHandler(rollbar_handler)
 
 rollbar.init(
     Config.ROLLBACK_ACCESS_TOKEN,
