@@ -1,13 +1,7 @@
-import asyncio
 from contextlib import asynccontextmanager
-import pprint
-
-from telegram import Update
-from celery.schedules import crontab
 
 from src.apps.accounts.tasks import fetch_sui_price, fetch_sui_usd_price_hourly
 from src.db.engine import init_db
-from src.celery_tasks import celery_app
 from src.utils.logger import LOGGER
 from src.middleware import register_middleware
 from src.config.settings import Config
@@ -16,12 +10,9 @@ from src.apps.accounts.views import auth_router, user_router
 import rollbar
 from rollbar.contrib.fastapi import add_to as rollbar_add_to
 
-from fastapi import BackgroundTasks, FastAPI, Request
+from fastapi import FastAPI
 from fastapi_pagination import add_pagination
-from fastapi.exceptions import RequestValidationError, ResponseValidationError
-from fastapi import status
-from fastapi.encoders import jsonable_encoder
-from telegram_bot import telegramApp
+
 import uvicorn
 
 version = Config.VERSION
@@ -87,7 +78,10 @@ app = FastAPI(
     docs_url=f"/{version}/docs",
     redoc_url=f"/{version}",
 )
-rollbar.init('2574e01d16c14665916305eae9694244')
+rollbar.init(
+    Config.ROLLBACK_ACCESS_TOKEN,
+    handler='async',
+)
 rollbar_add_to(app)
 
 # # Add an /error endpoint to cause an uncaught exception

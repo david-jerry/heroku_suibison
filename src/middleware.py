@@ -8,7 +8,7 @@ from src.config.settings import Config
 import time
 import logging
 
-import rollbar
+# import rollbar
 from rollbar.contrib.fastapi import ReporterMiddleware as RollbarMiddleware
 # from rollbar.logger import RollbarHandler
 
@@ -21,10 +21,6 @@ logger.disabled = True
 # rollbar_handler.setLevel(logging.ERROR)
 # logger.addHandler(rollbar_handler)
 
-rollbar.init(
-    Config.ROLLBACK_ACCESS_TOKEN,
-    handler='async',
-)
 
 def register_middleware(app: FastAPI):
 

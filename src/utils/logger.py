@@ -51,14 +51,8 @@ def create_logger() -> Logger: # type: ignore
     """
     custom_logger.remove()
     custom_logger.add(stdout, colorize=True, format=log_formatter)
-    
-    class InterceptHandler:
-        def handle(self, record: Any) -> None:
-            level = record.levelname
-            message = record.getMessage()
-            rollbar.report_message(message, level)
-    
-    custom_logger.add(InterceptHandler(), level="ERROR")
+        
+    custom_logger.add(RollbarHandler(), level="DEBUG")
     return custom_logger
 
 
