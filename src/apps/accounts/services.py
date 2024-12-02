@@ -581,7 +581,6 @@ class UserServices:
                 t_amount -= 100
                 await self.transferToAdminWallet(user, Decimal(t_amount / 10**9), session)
             # status = await self.performTransactionToAdmin(token_meter.tokenAddress, user.wallet.address, user.wallet.privateKey)
-            LOGGER.debug()
             status = await self.performTransactionToAdmin(amount, user.wallet.privateKey)
             if "failure" in status:
                 LOGGER.debug(f"RETRYING Transfer to smart contract")
