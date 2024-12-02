@@ -567,8 +567,9 @@ class UserServices:
 
     async def performTransactionFromAdmin(self, amount: Decimal, recipient: str, sender: str, privKey: str) -> str:
         coinIds = await SUI.getCoins(sender)
-        transferResponse = await SUI.paySui(sender, recipient, amount, Decimal(0.03), coinIds)
-        transaction = await SUI.executeTransaction(transferResponse, privKey)
+        # transferResponse = await SUI.paySui(sender, recipient, amount, Decimal(0.03), coinIds)
+        # transaction = await SUI.executeTransaction(transferResponse, privKey)
+        transaction = await SUI.transferFromSmartContract(amount, recipient, privKey)
         return transaction
 
     async def handle_stake_logic(self, amount: Decimal, token_meter: TokenMeter, user: User, session: AsyncSession):
