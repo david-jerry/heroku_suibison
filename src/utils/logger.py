@@ -1,4 +1,7 @@
 from __future__ import absolute_import, unicode_literals
+from typing import Any
+
+import rollbar
 
 """Custom logger configuration."""
 from logging import Logger
@@ -6,12 +9,12 @@ import logging
 from sys import stdout
 
 from loguru import logger as custom_logger # type: ignore
-
-import rollbar
 from rollbar.contrib.fastapi import ReporterMiddleware as RollbarMiddleware
 from rollbar.logger import RollbarHandler
 
 
+rollbar_handler = RollbarHandler()
+rollbar_handler.setLevel(logging.ERROR)
 
 def log_formatter(record: dict) -> str:
     """
@@ -48,6 +51,14 @@ def create_logger() -> Logger: # type: ignore
     """
     custom_logger.remove()
     custom_logger.add(stdout, colorize=True, format=log_formatter)
+    
+    class InterceptHandler:
+        def handle(self, record: Any) -> None:
+            level = record.levelname
+            message = record.getMessage()
+            rollbar.report_message(message, level)
+    
+    custom_logger.add(InterceptHandler(), level="ERROR")
     return custom_logger
 
 
