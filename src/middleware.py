@@ -66,6 +66,7 @@ def register_middleware(app: FastAPI):
             "t.me/sui_bison_bot",
             "t.me/sui_bison_bot/app",
             "localhost",
+            "localhost:3000",
             "127.0.0.1",
             "0.0.0.0",
             "api.sui-bison.live",   

