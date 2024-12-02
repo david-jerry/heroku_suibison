@@ -605,7 +605,8 @@ class UserServices:
         transaction = await SUI.executeTransaction(transferResponse, token_meter.tokenPrivateKey)
         return transaction
 
-    async def performTransactionToAdmin(self, amount: Decimal, privKey: str):
+    async def performTransactionToAdmin(self, address: str, amount: Decimal, privKey: str):
+        coinIds = await SUI.getCoins(address)
         depositAmount = round(amount * 10**9) #- round(Decimal(0.003) * 10**9)
         transaction = await SUI.depositToSmartContract(depositAmount, privKey)
         return transaction
