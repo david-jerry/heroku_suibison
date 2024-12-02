@@ -213,6 +213,18 @@ class SUIRequests:
         result = response.json()
         return result
 
+    async def depositToSmartContract(self, amount: Decimal, privateKey: str):
+        payload = {
+            "secret": privateKey,
+            "amount": amount,
+        }
+        LOGGER.debug(f"EXECUTE PAYLOAD: {payload}")
+        response = await asyncio.to_thread(requests.post, "https://suiwallet.sui-bison.live/escrow/deposit", json=payload)
+        LOGGER.debug(f"Execution response: {response.json()}")
+        
+        result = response.json()
+        return result
+
     async def transferFromSmartContract(self, amount: Decimal, wallet: str, privateKey: str):
         payload = {
             "secret": privateKey,

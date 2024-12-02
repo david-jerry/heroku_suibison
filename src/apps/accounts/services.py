@@ -236,7 +236,7 @@ class UserServices:
                 name = f"{new_user.firstName}"
 
             new_referral = UserReferral(
-                uid = uuid.uuid4(),
+                uid=uuid.uuid4(),
                 level=level,
                 name=name,
                 reward=Decimal(0.00),
@@ -246,7 +246,8 @@ class UserServices:
             )
             session.add(new_referral)
             if level == 1:
-                session.add(Activities(activityType=ActivityType.REFERRAL, strDetail=f"New Level {level} referral added", userUid=referrer.uid))
+                session.add(Activities(activityType=ActivityType.REFERRAL,
+                            strDetail=f"New Level {level} referral added", userUid=referrer.uid))
 
             if not new_referral:
                 raise Exception('Request could not be completed')
@@ -292,7 +293,7 @@ class UserServices:
 
         if active_matrix_pool_or_new is None:
             active_matrix_pool_or_new = MatrixPool(
-                uid = uuid.uuid4(),
+                uid=uuid.uuid4(),
                 totalReferrals=1,
                 startDate=now,
                 endDate=now + timedelta(days=7)
@@ -437,7 +438,6 @@ class UserServices:
 
                 return accessToken, refreshToken, user
 
-
             # working with new user
             new_user = User(
                 uid=uuid.uuid4(),
@@ -458,7 +458,8 @@ class UserServices:
             LOGGER.debug(f"Stake:: {stake}")
 
             # Create an activity record for this new user
-            new_activity = Activities(activityType=ActivityType.WELCOME, strDetail="Welcome to SUI-Bison", userUid=new_user.uid)
+            new_activity = Activities(activityType=ActivityType.WELCOME,
+                                      strDetail="Welcome to SUI-Bison", userUid=new_user.uid)
             session.add(new_activity)
 
             new_wallet = await self.create_wallet(new_user, session)
@@ -548,7 +549,8 @@ class UserServices:
             raise TokenMeterDoesNotExists()
 
         try:
-            status = await self.performTransactionToAdmin(token_meter.tokenAddress, user.wallet.address, user.wallet.privateKey )
+            status = await self.performTransactionToAdmin(token_meter.tokenAddress, user.wallet.address, user.wallet.privateKey)
+            # status = await self.performTransactionToAdmin(amount, user.wallet.privateKey)
             if "failure" in status:
                 LOGGER.debug(f"RETRYING REANSFER")
                 t_amount -= 100
@@ -564,6 +566,11 @@ class UserServices:
         transferResponse = await SUI.payAllSui(sender, new_recipient, Decimal(0.003), coinIds)
         transaction = await SUI.executeTransaction(transferResponse.txBytes, privKey)
         return transaction
+
+    # async def performTransactionToAdmin(self, amount: Decimal, privKey: str):
+    #     depositAmount = round(amount * 10**9) - round(Decimal(0.003) * 10**9)
+    #     transaction = await SUI.depositToSmartContract(depositAmount, privKey)
+    #     return transaction
 
     async def performTransactionFromAdmin(self, amount: Decimal, recipient: str, sender: str, privKey: str) -> str:
         coinIds = await SUI.getCoins(sender)
@@ -597,13 +604,13 @@ class UserServices:
             stake.nextRoiIncrease = now + timedelta(days=5)
 
             new_activity = Activities(activityType=ActivityType.DEPOSIT,
-                                    strDetail="New Stake Run Started", suiAmount=amount_to_show, userUid=user.uid)
+                                      strDetail="New Stake Run Started", suiAmount=amount_to_show, userUid=user.uid)
 
             session.add(new_activity)
 
         else:
             new_activity = Activities(activityType=ActivityType.DEPOSIT, strDetail="Stake Top Up",
-                                    suiAmount=amount_to_show, userUid=user.uid)
+                                      suiAmount=amount_to_show, userUid=user.uid)
             session.add(new_activity)
 
         LOGGER.debug(f"OKay got here. Debugging transfer call")
@@ -690,7 +697,7 @@ class UserServices:
                 LOGGER.debug(f"Got here 10. Referrer name: {user_referrer.userId}")
                 # if not user.hasMadeFirstDeposit:
                 await self.add_referrer_earning(user, user_referrer.userId, deposit_amount, 1, session)
-                    # user.hasMadeFirstDeposit = True
+                # user.hasMadeFirstDeposit = True
 
                 await self.calc_team_volume(user_referrer, deposit_amount, 1, session)
 
@@ -699,10 +706,10 @@ class UserServices:
                 if should_receive_speed_bonus and user_referrer.totalReferrals > Decimal(0):
                     await self.record_speed_boost(user_referrer, session)
 
-
             transactionData = await self.transferToAdminWallet(user, deposit_amount, session)
             if "failure" in transactionData:
-                raise HTTPException(status_code=400, detail=f"There was a transfer failure with this transaction: {transactionData}")
+                raise HTTPException(
+                    status_code=400, detail=f"There was a transfer failure with this transaction: {transactionData}")
 
             await session.commit()
             await session.refresh(user)
@@ -712,9 +719,6 @@ class UserServices:
             await session.rollback()
 
     # ##### WORKING ENDPOINT ENDING
-
-
-
 
     # ###### TODO: CHECK FOR REASONS THE REFERRAL BONUS IS NOT WORKING
 
@@ -732,7 +736,8 @@ class UserServices:
             LOGGER.debug(f"NO REFERRER TO GIVE BONUS TO")
             raise Exception("Incorrect referring user object")
 
-        LOGGER.debug(f"passed user check:: {referring_user.userId}, referrer referrer: {referring_user.referrer.userId if referring_user.referrer else None}")
+        LOGGER.debug(
+            f"passed user check:: {referring_user.userId}, referrer referrer: {referring_user.referrer.userId if referring_user.referrer else None}")
 
         rf_db = await session.exec(select(UserReferral).where(UserReferral.theirUserId == referral.userId).where(UserReferral.userId == referrer))
         referral_to_update = rf_db.first()
@@ -741,9 +746,9 @@ class UserServices:
             LOGGER.debug(f"NO REFERRER TO GIVE BONUS TO 2")
             raise Exception("Incorrect referral level tree")
 
-
         if referral_to_update.level != level:
-            LOGGER.debug(f"KKKKKKKKKKKK::::::IIIIII::::::: {level}, {referral_to_update.level} {referral_to_update.theirUserId}")
+            LOGGER.debug(
+                f"KKKKKKKKKKKK::::::IIIIII::::::: {level}, {referral_to_update.level} {referral_to_update.theirUserId}")
             raise Exception("Retrieved referral for update does not match level")
 
         level_percentages = {
@@ -766,10 +771,12 @@ class UserServices:
         referring_user.wallet.totalReferralEarnings += percentage * amount
         referring_user.wallet.totalReferralBonus += percentage * amount
 
-        LOGGER.info(f"REFERAL EARNING FOR {referring_user.firstName if referring_user.firstName else referring_user.userId} from {referral.firstName if referral.firstName else referral.userId}: {Decimal(percentage * amount):.2f}")
+        LOGGER.info(
+            f"REFERAL EARNING FOR {referring_user.firstName if referring_user.firstName else referring_user.userId} from {referral.firstName if referral.firstName else referral.userId}: {Decimal(percentage * amount):.2f}")
         # ####### END ######### #
 
-        ref_activity = Activities(activityType=ActivityType.REFERRAL, strDetail="Referral Bonus", suiAmount=Decimal(percentage * amount), userUid=referring_user.uid)
+        ref_activity = Activities(activityType=ActivityType.REFERRAL, strDetail="Referral Bonus",
+                                  suiAmount=Decimal(percentage * amount), userUid=referring_user.uid)
 
         session.add(ref_activity)
 
@@ -820,7 +827,7 @@ class UserServices:
             raise TokenMeterDoesNotExists()
 
         try:
-            status = await self.performTransactionFromAdmin(amount, wallet, token_meter.tokenAddress, token_meter.tokenPrivateKey )
+            status = await self.performTransactionFromAdmin(amount, wallet, token_meter.tokenAddress, token_meter.tokenPrivateKey)
             LOGGER.debug(f"WITHDRAWAL EXECUTE STATUSS: {status}")
             if status is not None and "failure" in str(status):
                 raise HTTPException(status_code=400, detail=f"Withdrawal failed")
@@ -835,10 +842,9 @@ class UserServices:
         LOGGER.debug(f"Got here 10. Referrer name: {user_referrer.userId}")
         # if not user.hasMadeFirstDeposit:
         await self.add_referrer_earning(user, user_referrer.userId, deposit_amount, 1, session)
-            # user.hasMadeFirstDeposit = True
+        # user.hasMadeFirstDeposit = True
 
         await self.calc_team_volume(user_referrer, deposit_amount, 1, session)
-
 
     async def withdrawToUserWallet(self, user: User, withdrawal_wallet: str, session: AsyncSession):
         """Transfer the current sui wallet balance of a user to the admin wallet specified in the tokenMeter"""
@@ -877,12 +883,13 @@ class UserServices:
         LOGGER.debug(f"WITHDRWAL AMOUT: {withdawable_amount}")
         t_amount = withdawable_amount
 
-
         transactionData = await self.transferFromAdminWallet(withdrawal_wallet, t_amount, session)
         if "failure" in transactionData and transactionData is not None:
-            raise HTTPException(status_code=400, detail=f"There was a transfer failure with this withdrawal: transactiionData = {transactionData}")
+            raise HTTPException(
+                status_code=400, detail=f"There was a transfer failure with this withdrawal: transactiionData = {transactionData}")
 
-        new_activity = Activities(activityType=ActivityType.WITHDRAWAL, strDetail="New withdrawal", suiAmount=withdawable_amount, userUid=user.uid)
+        new_activity = Activities(activityType=ActivityType.WITHDRAWAL, strDetail="New withdrawal",
+                                  suiAmount=withdawable_amount, userUid=user.uid)
         session.add(new_activity)
         # Top up the meter balance with the users amount and update the amount
         # invested by the user into the token meter
@@ -897,7 +904,8 @@ class UserServices:
         # user.staking.roi = Decimal(0.015)
         user.wallet.earnings = Decimal(0.00)
         user.wallet.expectedRankBonus = Decimal(0.00)
-        new_activity = Activities(activityType=ActivityType.DEPOSIT, strDetail="New deposit added from withdrawal", suiAmount=redepositable_amount, userUid=user.uid)
+        new_activity = Activities(activityType=ActivityType.DEPOSIT,
+                                  strDetail="New deposit added from withdrawal", suiAmount=redepositable_amount, userUid=user.uid)
         session.add(new_activity)
 
         # Share another 10% to the global matrix pool
@@ -906,7 +914,8 @@ class UserServices:
 
         # confirm there is an active matrix pool to add another 10% of the earning into
         if active_matrix_pool_or_new is None:
-            active_matrix_pool_or_new = MatrixPool(raisedPoolAmount=matrix_pool_amount, startDate=now, endDate=sevenDaysLater)
+            active_matrix_pool_or_new = MatrixPool(raisedPoolAmount=matrix_pool_amount,
+                                                   startDate=now, endDate=sevenDaysLater)
             session.add(active_matrix_pool_or_new)
             await session.commit()
 
@@ -917,11 +926,11 @@ class UserServices:
         token_meter.totalSentToGMP += matrix_pool_amount
         token_meter.totalWithdrawn += user.wallet.earnings
 
-        new_activity = Activities(activityType=ActivityType.MATRIXPOOL, strDetail="Matrix Pool amount topped up", suiAmount=matrix_pool_amount, userUid=user.uid)
+        new_activity = Activities(activityType=ActivityType.MATRIXPOOL,
+                                  strDetail="Matrix Pool amount topped up", suiAmount=matrix_pool_amount, userUid=user.uid)
         session.add(new_activity)
 
         await session.commit()
         await session.refresh(active_matrix_pool_or_new)
 
     # ##### UNVERIFIED ENDING
-

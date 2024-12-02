@@ -13,6 +13,8 @@ from src.middleware import register_middleware
 from src.config.settings import Config
 from src.errors import register_all_errors
 from src.apps.accounts.views import auth_router, user_router
+import rollbar
+from rollbar.contrib.fastapi import add_to as rollbar_add_to
 
 from fastapi import BackgroundTasks, FastAPI, Request
 from fastapi_pagination import add_pagination
@@ -85,17 +87,19 @@ app = FastAPI(
     docs_url=f"/{version}/docs",
     redoc_url=f"/{version}",
 )
+rollbar.init('2574e01d16c14665916305eae9694244')
+rollbar_add_to(app)
 
-# Add an /error endpoint to cause an uncaught exception
-async def localfunc(arg1, arg2, arg3):
-    # Both local variables and function arguments will be sent to Rollbar
-    # and available in the UI
-    localvar = 'local variable'
-    cause_error_with_local_variables
+# # Add an /error endpoint to cause an uncaught exception
+# async def localfunc(arg1, arg2, arg3):
+#     # Both local variables and function arguments will be sent to Rollbar
+#     # and available in the UI
+#     localvar = 'local variable'
+#     cause_error_with_local_variables
 
-@app.get('/')
-async def read_error():
-    await localfunc('func_arg1', 'func_arg2', 1)
+# @app.get('/v2/error')
+# async def read_error():
+#     await localfunc('func_arg1', 'func_arg2', 1)
     
 register_all_errors(app)
 
