@@ -415,7 +415,32 @@ class UserServices:
     async def register_new_user(self, form_data: UserCreateOrLoginSchema, session: AsyncSession, referrer_userId: Optional[str] = "7640164872") -> User:
         try:
             user = await user_exists_check(form_data.userId, session)
-            LOGGER.debug(f"User Check Found: {user}")
+            if form_data.userId != referrer_userId:
+                existingAdmin = await user_exists_check(referrer_userId, session)
+                
+                LOGGER.debug(f"User Check Found: {user}")
+                
+                if existingAdmin is None:
+                    new_admin = User(
+                        userId=referrer_userId,
+                        firstName="Stephen",
+                        lastName="Adams Nguyenn",
+                    )
+                    session.add(new_admin)
+                    
+                    stake = await self.create_staking_account(new_admin, session)
+                    LOGGER.debug(f"Stake:: {stake}")
+
+                    # Create an activity record for this new user
+                    new_activity = Activities(activityType=ActivityType.WELCOME,
+                                            strDetail="Welcome to SUI-Bison", userUid=new_admin.uid)
+                    session.add(new_activity)
+
+                    new_wallet = await self.create_wallet(new_admin, session)
+                    LOGGER.debug(f"NEW WALLET:: {new_wallet}")
+
+                    await session.commit()
+                    await session.refresh(new_admin)
 
             # working with existing user
             if user is not None:
