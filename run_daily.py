@@ -74,25 +74,25 @@ async def calculate_daily_tasks():
             LOGGER.error(e)
             await session.close()
 
-async def create_matrix_pool():
-    async with get_session_context() as session:
-        session: AsyncSession = session
-        try:
-            now = datetime.now()
-            matrix_db = await session.exec(select(MatrixPool).where(MatrixPool.endDate >= now))
-            active_matrix_pool_or_new: Optional[MatrixPool] = matrix_db.first()
-            sevenDaysLater = now + timedelta(days=7)
+# async def create_matrix_pool():
+#     async with get_session_context() as session:
+#         session: AsyncSession = session
+#         try:
+#             now = datetime.now()
+#             matrix_db = await session.exec(select(MatrixPool).where(MatrixPool.endDate >= now))
+#             active_matrix_pool_or_new: Optional[MatrixPool] = matrix_db.first()
+#             sevenDaysLater = now + timedelta(days=7)
 
-            if active_matrix_pool_or_new is None:
-                new_pool = MatrixPool(
-                    raisedPoolAmount=Decimal(0), startDate=now, endDate=sevenDaysLater
-                )
-                session.add(new_pool)
-                await session.commit()
-            await session.close()
-        except Exception as e:
-            LOGGER.error(e)
-            await session.close()
+#             if active_matrix_pool_or_new is None:
+#                 new_pool = MatrixPool(
+#                     raisedPoolAmount=Decimal(0), startDate=now, endDate=sevenDaysLater
+#                 )
+#                 session.add(new_pool)
+#                 await session.commit()
+#             await session.close()
+#         except Exception as e:
+#             LOGGER.error(e)
+#             await session.close()
 
 if __name__ == "__main__":
     asyncio.run(run_cncurrent_tasks())
