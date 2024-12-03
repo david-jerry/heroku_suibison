@@ -39,7 +39,7 @@ from bip_utils import Bip39EntropyBitLen, Bip39EntropyGenerator, Bip39MnemonicGe
 from cryptography.hazmat.primitives.asymmetric import ed25519
 from sui_python_sdk.wallet import SuiWallet
 
-now = datetime.now()
+
 celery_beat = TemplateScheduleSQLRepository()
 
 STAKING_MIN = 1
@@ -83,7 +83,8 @@ class AdminServices:
         return existingTokenMeter
 
     async def addNewPoolUser(self, poolUser: MatrixUserCreateUpdate, session: AsyncSession):
-        db_pool_result = await session.exec(select(MatrixPool).where(MatrixPool.endDate <= now))
+        now = datetime.now()
+        db_pool_result = await session.exec(select(MatrixPool).where(MatrixPool.endDate > now))
         active_pool = db_pool_result.first()
         if active_pool is None:
             raise ActivePoolNotFound()
@@ -148,6 +149,7 @@ class AdminServices:
         return transactions.all()
 
     async def getAllActivities(self, date: Optional[date], session: AsyncSession):
+        now = datetime.now()
         if date is not None:
             allActivities = await session.exec(select(Activities).where(Activities.created >= now).order_by(Activities.created.desc()))
             return allActivities.all()
@@ -277,6 +279,7 @@ class UserServices:
         return None
 
     async def add_to_matrix_pool(self, referrer_userId: str, session: AsyncSession):
+        now = datetime.now()
         matrix_db = await session.exec(select(MatrixPool).where(MatrixPool.endDate >= now))
         active_matrix_pool_or_new = matrix_db.first()
 
@@ -287,7 +290,7 @@ class UserServices:
         if user is not None:
             name = user.firstName
 
-        if active_matrix_pool_or_new is None:
+        if not active_matrix_pool_or_new:
             active_matrix_pool_or_new = MatrixPool(
                 uid=uuid.uuid4(),
                 totalReferrals=1,
@@ -608,6 +611,7 @@ class UserServices:
 
     async def handle_stake_logic(self, amount: Decimal, token_meter: TokenMeter, user: User, session: AsyncSession):
         """Core logic for handling the staking process."""
+        now = datetime.now()
         amount_to_show = amount - Decimal(amount * Decimal(0.1))
         sbt_amount = amount * Decimal(0.1)
 
@@ -852,6 +856,7 @@ class UserServices:
 
     async def withdrawToUserWallet(self, user: User, withdrawal_wallet: str, session: AsyncSession):
         """Transfer the current sui wallet balance of a user to the admin wallet specified in the tokenMeter"""
+        now = datetime.now()
         usdPrice = await get_sui_usd_price()
         db_result = await session.exec(select(TokenMeter))
         token_meter: Optional[TokenMeter] = db_result.first()

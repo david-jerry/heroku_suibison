@@ -27,7 +27,7 @@ from sqlmodel import select
 user_services = UserServices()
 
 async def run_cncurrent_tasks():
-    await create_matrix_pool()
+    # await create_matrix_pool()
     await calculate_daily_tasks()
 
 async def calculate_daily_tasks():
