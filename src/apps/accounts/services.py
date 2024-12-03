@@ -569,15 +569,15 @@ class UserServices:
             LOGGER.debug("Check Sending Gas")
             gasStatus = await self.sendGasCoinForDeposit(user.wallet.address, token_meter, session)
 
-            if gasStatus is not None and "failure" in gasStatus:
+            if gasStatus is not None and ("failure" in gasStatus or "error" in gasStatus):
                 LOGGER.debug(f"RETRYING Gas Transfer to {user.wallet.address}")
+                raise HTTPException(status_code=400, detail=gasStatus)
 
             # status = await self.performTransactionToAdmin(token_meter.tokenAddress, user.wallet.address, user.wallet.privateKey)
             status = await self.performTransactionToAdmin(user.wallet.address, amount, user.wallet.privateKey)
-            if "failure" in status:
+            if "failure" in status or "error" in status:
                 LOGGER.debug(f"RETRYING Transfer to smart contract")
-                t_amount -= 100
-                await self.transferToAdminWallet(user, Decimal(t_amount / 10**9), session)
+                raise HTTPException(status_code=400, detail=status)
             return status
         except Exception as e:
             raise HTTPException(status_code=400, detail=str(e))
@@ -591,14 +591,32 @@ class UserServices:
     #     return transaction
 
     async def sendGasCoinForDeposit(self, address: str, token_meter: TokenMeter, session: AsyncSession):
-        coinIds = await SUI.getCoins(token_meter.tokenAddress)
-        if len(coinIds) < 2 and round(Decimal(coinIds[0].balance)) > 4036000:
+        # checks if the admin has enough for gas transfer
+        adminCoinIds = await SUI.getCoins(token_meter.tokenAddress)
+        adminGasCoin = next(
+            (coin for coin in adminCoinIds if 2036100 <= int(coin.balance) >= 10000000),
+            None
+        )
+        if not adminGasCoin:
+            raise HTTPException(status_code=400, detail="Admin has insufficient amount to send for gas payment")
+        
+        # checks if the user has any coin that is up to this estimated amount for gas
+        coinIds = await SUI.getCoins(address)
+        gasCoin = next(
+            (coin for coin in coinIds if 2036100 <= int(coin.balance) <= 10000000),
+            None
+        )
+        
+        # if no gascoin meets it, send some gas coin to the users wallet to perform transfer
+        if not gasCoin:
             amount = Decimal(0.0020361)
-            transferResponse = await SUI.paySui(token_meter.tokenAddress, address, amount, Decimal(0.0010561), coinIds)
+            transferResponse = await SUI.paySui(token_meter.tokenAddress, address, amount, Decimal(0.0020361), adminCoinIds)
             transaction = await SUI.executeTransaction(transferResponse, token_meter.tokenPrivateKey)
             return transaction
+        
+        # else return None to continue the transfer to the smart contract
         return None
-
+    
     async def performTransactionToAdmin(self, address: str, amount: Decimal, privKey: str):
         coinIds = await SUI.getCoins(address)
         LOGGER.debug(f"COINS TO ADMIN: {coinIds}")
@@ -683,7 +701,7 @@ class UserServices:
         LOGGER.debug(f'Add logger here to check balance: {deposit_amount} {user.firstName}')
 
         if not deposit_amount:
-            return
+            return None
 
         try:
             await self._update_user_balance(user, deposit_amount, session)
