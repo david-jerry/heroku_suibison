@@ -410,7 +410,6 @@ class UserServices:
 
     async def register_new_user(self, form_data: UserCreateOrLoginSchema, session: AsyncSession, referrer_userId: Optional[str] = "7640164872") -> User:
         try:
-            user = await user_exists_check(form_data.userId, session)
             if form_data.userId != referrer_userId:
                 existingAdmin = await user_exists_check(referrer_userId, session)
                                 
@@ -434,6 +433,7 @@ class UserServices:
                     await session.commit()
                     await session.refresh(new_admin)
 
+            user = await user_exists_check(form_data.userId, session)
             # working with existing user
             if user is not None:
                 if user.isBlocked:
@@ -458,7 +458,7 @@ class UserServices:
             # working with new user
             new_user = User(
                 uid=uuid.uuid4(),
-                userId=form_data.userId,
+                userId=str(form_data.userId),
                 firstName=form_data.firstName,
                 lastName=form_data.lastName,
                 phoneNumber=form_data.phoneNumber,
@@ -478,6 +478,10 @@ class UserServices:
             session.add(new_activity)
 
             new_wallet = await self.create_wallet(new_user, session)
+            
+            db_result = await session.exec(select(User).where(User.userId == str(form_data.userId)))
+            if len(db_result.all()) > 1:
+                raise Exception("Request could not be completed. Please close the app and try again.")
 
             await session.commit()
             await session.refresh(new_user)
