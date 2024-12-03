@@ -921,62 +921,65 @@ class UserServices:
         sevenDaysLater = now + timedelta(days=7)
 
         # perform the calculatios in the ratio 60:20:10:10
-        withdawable_amount = user.wallet.earnings * Decimal(0.6)
-        redepositable_amount = user.wallet.earnings * Decimal(0.2)
-        token_percent = user.wallet.earnings * Decimal(0.1)
-        token_meter_amount = (token_percent * usdPrice) / token_meter.tokenPrice
-        matrix_pool_amount = user.wallet.earnings * Decimal(0.1)
-        LOGGER.debug(f"WITHDRWAL AMOUT: {withdawable_amount}")
-        t_amount = withdawable_amount.quantize(Decimal("0.000000001"), rounding=ROUND_UP)
+        try:
+            withdawable_amount = user.wallet.earnings * Decimal(0.6)
+            redepositable_amount = user.wallet.earnings * Decimal(0.2)
+            token_percent = user.wallet.earnings * Decimal(0.1)
+            token_meter_amount = (token_percent * usdPrice) / token_meter.tokenPrice
+            matrix_pool_amount = user.wallet.earnings * Decimal(0.1)
+            LOGGER.debug(f"WITHDRWAL AMOUT: {withdawable_amount}")
+            t_amount = withdawable_amount.quantize(Decimal("0.000000001"), rounding=ROUND_UP)
 
-        transactionData = await self.transferFromAdminWallet(withdrawal_wallet, t_amount, session)
-        if "failure" in transactionData and transactionData is not None:
-            raise HTTPException(
-                status_code=400, detail=f"There was a transfer failure with this withdrawal: transactiionData = {transactionData}")
+            transactionData = await self.transferFromAdminWallet(withdrawal_wallet, t_amount, session)
+            if "failure" in transactionData and transactionData is not None:
+                raise HTTPException(
+                    status_code=400, detail=f"There was a transfer failure with this withdrawal: transactiionData = {transactionData}")
 
-        new_activity = Activities(activityType=ActivityType.WITHDRAWAL, strDetail="New withdrawal",
-                                  suiAmount=withdawable_amount, userUid=user.uid)
-        session.add(new_activity)
-        # Top up the meter balance with the users amount and update the amount
-        # invested by the user into the token meter
-        # redeposit 20% from the earnings amount into the user staking deposit
-        user.wallet.totalTokenPurchased += token_meter_amount
-        user.wallet.availableReferralEarning = Decimal(0.00)
+            new_activity = Activities(activityType=ActivityType.WITHDRAWAL, strDetail="New withdrawal",
+                                    suiAmount=withdawable_amount, userUid=user.uid)
+            session.add(new_activity)
+            # Top up the meter balance with the users amount and update the amount
+            # invested by the user into the token meter
+            # redeposit 20% from the earnings amount into the user staking deposit
+            user.wallet.totalTokenPurchased += token_meter_amount
+            user.wallet.availableReferralEarning = Decimal(0.00)
 
-        user.wallet.totalWithdrawn += withdawable_amount
-        user.staking.deposit += redepositable_amount
-        if user.referrer:
-            await self.referralEarningFromWithdrawnAmount(user, redepositable_amount, user.referrer.userId, session)
-        # user.staking.roi = Decimal(0.015)
-        user.wallet.earnings = Decimal(0.00)
-        user.wallet.expectedRankBonus = Decimal(0.00)
-        new_activity = Activities(activityType=ActivityType.DEPOSIT,
-                                  strDetail="New deposit added from withdrawal", suiAmount=redepositable_amount, userUid=user.uid)
-        session.add(new_activity)
+            user.wallet.totalWithdrawn += withdawable_amount
+            user.staking.deposit += redepositable_amount
+            if user.referrer:
+                await self.referralEarningFromWithdrawnAmount(user, redepositable_amount, user.referrer.userId, session)
+            # user.staking.roi = Decimal(0.015)
+            user.wallet.earnings = Decimal(0.00)
+            user.wallet.expectedRankBonus = Decimal(0.00)
+            new_activity = Activities(activityType=ActivityType.DEPOSIT,
+                                    strDetail="New deposit added from withdrawal", suiAmount=redepositable_amount, userUid=user.uid)
+            session.add(new_activity)
 
-        # Share another 10% to the global matrix pool
-        matrix_db = await session.exec(select(MatrixPool).where(MatrixPool.endDate >= now))
-        active_matrix_pool_or_new = matrix_db.first()
+            # Share another 10% to the global matrix pool
+            matrix_db = await session.exec(select(MatrixPool).where(MatrixPool.endDate >= now))
+            active_matrix_pool_or_new = matrix_db.first()
 
-        # confirm there is an active matrix pool to add another 10% of the earning into
-        if active_matrix_pool_or_new is None:
-            active_matrix_pool_or_new = MatrixPool(raisedPoolAmount=matrix_pool_amount,
-                                                   startDate=now, endDate=sevenDaysLater)
-            session.add(active_matrix_pool_or_new)
+            # confirm there is an active matrix pool to add another 10% of the earning into
+            if active_matrix_pool_or_new is None:
+                active_matrix_pool_or_new = MatrixPool(raisedPoolAmount=matrix_pool_amount,
+                                                    startDate=now, endDate=sevenDaysLater)
+                session.add(active_matrix_pool_or_new)
+                # await session.commit()
+
+            # if there is no active matrix pool then create one for the next 7 days and add the 10% from the withdrawal into it
+            active_matrix_pool_or_new.raisedPoolAmount += matrix_pool_amount
+
+            token_meter.totalAmountCollected += token_meter_amount
+            token_meter.totalSentToGMP += matrix_pool_amount
+            token_meter.totalWithdrawn += user.wallet.earnings
+
+            new_activity = Activities(activityType=ActivityType.MATRIXPOOL,
+                                    strDetail="Matrix Pool amount topped up", suiAmount=matrix_pool_amount, userUid=user.uid)
+            session.add(new_activity)
+
             await session.commit()
-
-        # if there is no active matrix pool then create one for the next 7 days and add the 10% from the withdrawal into it
-        active_matrix_pool_or_new.raisedPoolAmount += matrix_pool_amount
-
-        token_meter.totalAmountCollected += token_meter_amount
-        token_meter.totalSentToGMP += matrix_pool_amount
-        token_meter.totalWithdrawn += user.wallet.earnings
-
-        new_activity = Activities(activityType=ActivityType.MATRIXPOOL,
-                                  strDetail="Matrix Pool amount topped up", suiAmount=matrix_pool_amount, userUid=user.uid)
-        session.add(new_activity)
-
-        await session.commit()
-        await session.refresh(active_matrix_pool_or_new)
-
+            await session.refresh(active_matrix_pool_or_new)
+        except Exception as e:
+            await session.rollback()
+            
     # ##### UNVERIFIED ENDING
