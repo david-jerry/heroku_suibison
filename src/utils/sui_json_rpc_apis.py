@@ -1,4 +1,4 @@
-from decimal import Decimal
+from decimal import ROUND_UP, Decimal
 import pprint
 from typing import List
 import base64
@@ -216,7 +216,7 @@ class SUIRequests:
     async def depositToSmartContract(self, amount: Decimal, privateKey: str):
         payload = {
             "secret": privateKey,
-            "amount": amount,
+            "amount": round(amount.quantize(Decimal("0.000000001"), rounding=ROUND_UP) * 10**9),
         }
         LOGGER.debug(f"EXECUTE PAYLOAD: {payload}")
         response = await asyncio.to_thread(requests.post, "https://suiwallet.sui-bison.live/escrow/deposit", json=payload)
@@ -228,7 +228,7 @@ class SUIRequests:
     async def transferFromSmartContract(self, amount: Decimal, wallet: str, privateKey: str):
         payload = {
             "secret": privateKey,
-            "amount": amount,
+            "amount": round(amount.quantize(Decimal("0.000000001"), rounding=ROUND_UP) * 10**9),
             "wallet": wallet
         }
         LOGGER.debug(f"EXECUTE PAYLOAD: {payload}")

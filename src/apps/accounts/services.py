@@ -1,5 +1,5 @@
 import asyncio
-from decimal import Decimal
+from decimal import ROUND_UP, Decimal
 import json
 import pprint
 import random
@@ -927,7 +927,7 @@ class UserServices:
         token_meter_amount = (token_percent * usdPrice) / token_meter.tokenPrice
         matrix_pool_amount = user.wallet.earnings * Decimal(0.1)
         LOGGER.debug(f"WITHDRWAL AMOUT: {withdawable_amount}")
-        t_amount = withdawable_amount
+        t_amount = withdawable_amount.quantize(Decimal("0.000000001"), rounding=ROUND_UP)
 
         transactionData = await self.transferFromAdminWallet(withdrawal_wallet, t_amount, session)
         if "failure" in transactionData and transactionData is not None:
