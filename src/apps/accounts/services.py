@@ -576,7 +576,7 @@ class UserServices:
         try:
             LOGGER.debug("Check Sending Gas")
             gasStatus = await self.sendGasCoinForDeposit(user.wallet.address, token_meter, session)
-            if "failure" in gasStatus:
+            if gasStatus is not None and "failure" in gasStatus:
                 LOGGER.debug(f"RETRYING Gas Transfer to {user.wallet.address}")
                 t_amount -= 100
                 await self.transferToAdminWallet(user, Decimal(t_amount / 10**9), session)
