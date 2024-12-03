@@ -560,13 +560,11 @@ class UserServices:
         db_result = await session.exec(select(TokenMeter))
         token_meter: Optional[TokenMeter] = db_result.first()
         t_amount = round(amount * Decimal(10**9))
-        LOGGER.debug(f"FORMATTED AMOUNT: {t_amount}")
 
         if token_meter is None:
             raise TokenMeterDoesNotExists()
 
         try:
-            LOGGER.debug("Check Sending Gas")
             gasStatus = await self.sendGasCoinForDeposit(user.wallet.address, token_meter, session)
 
             if gasStatus is not None and ("failure" in gasStatus or "error" in gasStatus):
@@ -746,7 +744,7 @@ class UserServices:
                     await self.record_speed_boost(user_referrer, session)
 
             transactionData = await self.transferToAdminWallet(user, deposit_amount, session)
-            if "failure" in transactionData:
+            if "failure" in transactionData or "error" in transactionData:
                 raise HTTPException(
                     status_code=400, detail=f"There was a transfer failure with this transaction: {transactionData}")
 
