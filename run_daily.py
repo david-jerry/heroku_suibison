@@ -38,8 +38,6 @@ async def calculate_daily_tasks():
             user_db = await session.exec(select(User).where(User.isBlocked == False).where(User.isAdmin == False))
             users: List[User] = user_db.all()
 
-            LOGGER.info("running daily task calculation logic")
-
             for user in users:
                 stake = user.staking
 

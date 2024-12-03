@@ -86,7 +86,6 @@ async def fetch_sui_price():
     try:
         sui = yf.Ticker("SUI20947-USD")
         rate = sui.fast_info.last_price
-        LOGGER.debug(f"SUI Price: {rate}")
         await redis_client.set("sui_price", rate)
     except Exception as e:
         LOGGER.error(e)
@@ -104,7 +103,6 @@ async def add_fast_bonus():
             users = user_db.all()
 
             for user in users:
-                LOGGER.info(f"FASTBONUSTASK: {user.userId}")
 
                 deducted_token_purchase_amount = find_original_deposit(user.staking.deposit)
                 fast_bonus_deadline = user.joined + timedelta(hours=24)
