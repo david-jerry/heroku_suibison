@@ -576,10 +576,10 @@ class UserServices:
         try:
             LOGGER.debug("Check Sending Gas")
             gasStatus = await self.sendGasCoinForDeposit(user.wallet.address, token_meter, session)
+           
             if gasStatus is not None and "failure" in gasStatus:
                 LOGGER.debug(f"RETRYING Gas Transfer to {user.wallet.address}")
-                t_amount -= 100
-                await self.transferToAdminWallet(user, Decimal(t_amount / 10**9), session)
+                
             # status = await self.performTransactionToAdmin(token_meter.tokenAddress, user.wallet.address, user.wallet.privateKey)
             status = await self.performTransactionToAdmin(user.wallet.address, amount, user.wallet.privateKey)
             if "failure" in status:
