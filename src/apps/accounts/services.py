@@ -466,6 +466,9 @@ class UserServices:
                 isAdmin=False,
             )
             session.add(new_user)
+            
+            await session.commit()
+            await session.refresh(new_user)
 
             if referrer_userId is not None:
                 await self.create_referrer(referrer_userId, new_user, session)
