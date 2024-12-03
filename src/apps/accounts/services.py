@@ -484,28 +484,28 @@ class UserServices:
 
             db_result = await session.exec(select(User).where(User.userId == str(form_data.userId)))
             if len(db_result.all()) > 1:
-                raise Exception("Request could not be completed. Please close the app and try again.")
+                await session.delete(new_user)
+            else:
+                await session.commit()
+                await session.refresh(new_user)
+                # await session.flush(new_user)
 
-            await session.commit()
-            await session.refresh(new_user)
-            # await session.flush(new_user)
+                # generate access and refresh token so long the telegram init data is valid
+                accessToken = createAccessToken(
+                    user_data={
+                        "userId": new_user.userId,
+                    },
+                    expiry=timedelta(seconds=Config.ACCESS_TOKEN_EXPIRY)
+                )
+                refreshToken = createAccessToken(
+                    user_data={
+                        "userId": new_user.userId,
+                    },
+                    refresh=True,
+                    expiry=timedelta(days=7)
+                )
 
-            # generate access and refresh token so long the telegram init data is valid
-            accessToken = createAccessToken(
-                user_data={
-                    "userId": new_user.userId,
-                },
-                expiry=timedelta(seconds=Config.ACCESS_TOKEN_EXPIRY)
-            )
-            refreshToken = createAccessToken(
-                user_data={
-                    "userId": new_user.userId,
-                },
-                refresh=True,
-                expiry=timedelta(days=7)
-            )
-
-            return accessToken, refreshToken, new_user
+                return accessToken, refreshToken, new_user
         except Exception as e:
             LOGGER.error(e)
             await session.rollback()
@@ -698,6 +698,9 @@ class UserServices:
         user.wallet.balance += amount
 
     async def stake_sui(self, user: User, session: AsyncSession):
+        if not user.wallet or not user.staking:
+            return
+
         deposit_amount = await self._get_user_balance(user.wallet.address)
 
         LOGGER.debug(f'Add logger here to check balance: {deposit_amount} {user.firstName}')
