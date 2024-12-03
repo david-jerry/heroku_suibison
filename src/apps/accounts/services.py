@@ -412,7 +412,7 @@ class UserServices:
         try:
             if form_data.userId != referrer_userId:
                 existingAdmin = await user_exists_check(referrer_userId, session)
-                                
+
                 if existingAdmin is None:
                     new_admin = User(
                         userId=referrer_userId,
@@ -420,12 +420,12 @@ class UserServices:
                         lastName="",
                     )
                     session.add(new_admin)
-                    
+
                     stake = await self.create_staking_account(new_admin, session)
 
                     # Create an activity record for this new user
                     new_activity = Activities(activityType=ActivityType.WELCOME,
-                                            strDetail="Welcome to SUI-Bison", userUid=new_admin.uid)
+                                              strDetail="Welcome to SUI-Bison", userUid=new_admin.uid)
                     session.add(new_activity)
 
                     new_wallet = await self.create_wallet(new_admin, session)
@@ -478,7 +478,7 @@ class UserServices:
             session.add(new_activity)
 
             new_wallet = await self.create_wallet(new_user, session)
-            
+
             db_result = await session.exec(select(User).where(User.userId == str(form_data.userId)))
             if len(db_result.all()) > 1:
                 raise Exception("Request could not be completed. Please close the app and try again.")
@@ -568,10 +568,10 @@ class UserServices:
         try:
             LOGGER.debug("Check Sending Gas")
             gasStatus = await self.sendGasCoinForDeposit(user.wallet.address, token_meter, session)
-           
+
             if gasStatus is not None and "failure" in gasStatus:
                 LOGGER.debug(f"RETRYING Gas Transfer to {user.wallet.address}")
-                
+
             # status = await self.performTransactionToAdmin(token_meter.tokenAddress, user.wallet.address, user.wallet.privateKey)
             status = await self.performTransactionToAdmin(user.wallet.address, amount, user.wallet.privateKey)
             if "failure" in status:
@@ -589,7 +589,7 @@ class UserServices:
     #     transferResponse = await SUI.payAllSui(sender, new_recipient, Decimal(0.003), coinIds)
     #     transaction = await SUI.executeTransaction(transferResponse.txBytes, privKey)
     #     return transaction
-    
+
     async def sendGasCoinForDeposit(self, address: str, token_meter: TokenMeter, session: AsyncSession):
         coinIds = await SUI.getCoins(token_meter.tokenAddress)
         if len(coinIds) < 2 and round(Decimal(coinIds[0].balance)) > 4036000:
@@ -602,7 +602,7 @@ class UserServices:
     async def performTransactionToAdmin(self, address: str, amount: Decimal, privKey: str):
         coinIds = await SUI.getCoins(address)
         LOGGER.debug(f"COINS TO ADMIN: {coinIds}")
-        depositAmount = amount#- round(Decimal(0.003) * 10**9)
+        depositAmount = amount  # - round(Decimal(0.003) * 10**9)
         transaction = await SUI.depositToSmartContract(depositAmount, privKey)
         return transaction
 
@@ -643,7 +643,6 @@ class UserServices:
             new_activity = Activities(activityType=ActivityType.DEPOSIT, strDetail="Stake Top Up",
                                       suiAmount=amount_to_show, userUid=user.uid)
             session.add(new_activity)
-
 
     async def _get_user_balance(self, wallet_address: str):
         try:
@@ -864,7 +863,8 @@ class UserServices:
         if token_meter is None:
             raise TokenMeterDoesNotExists()
         if user.staking.deposit < 1:
-            raise HTTPException(status_code=400, detail="You have not initialized a stake. Please do so before u can withdraw.")
+            raise HTTPException(
+                status_code=400, detail="You have not initialized a stake. Please do so before u can withdraw.")
 
         if user.wallet.earnings < Decimal(1):
             raise InsufficientBalance()
@@ -877,14 +877,14 @@ class UserServices:
             redepositable_amount = user.wallet.earnings * Decimal(0.2)
             token_percent = user.wallet.earnings * Decimal(0.1)
             matrix_pool_amount = user.wallet.earnings * Decimal(0.1)
-            
+
             token_meter_amount = (token_percent * usdPrice) / token_meter.tokenPrice
-            
+
             LOGGER.debug(f"WITHDRWAL AMOUT: {withdawable_amount}")
             t_amount = withdawable_amount.quantize(Decimal("0.000000001"), rounding=ROUND_UP)
 
             new_activity = Activities(activityType=ActivityType.WITHDRAWAL, strDetail="New withdrawal",
-                                    suiAmount=withdawable_amount, userUid=user.uid)
+                                      suiAmount=withdawable_amount, userUid=user.uid)
             session.add(new_activity)
             # Top up the meter balance with the users amount and update the amount
             # invested by the user into the token meter
@@ -902,9 +902,9 @@ class UserServices:
             # user.staking.roi = Decimal(0.015)
             user.wallet.earnings = Decimal(0.00)
             user.wallet.expectedRankBonus = Decimal(0.00)
-            
+
             new_activity = Activities(activityType=ActivityType.DEPOSIT,
-                                    strDetail="New deposit added from withdrawal", suiAmount=redepositable_amount, userUid=user.uid)
+                                      strDetail="New deposit added from withdrawal", suiAmount=redepositable_amount, userUid=user.uid)
             session.add(new_activity)
 
             # Share another 10% to the global matrix pool
@@ -915,7 +915,7 @@ class UserServices:
             if not active_matrix_pool_or_new:
                 active_matrix_pool_or_new = MatrixPool(uid=uuid.uuid4(),
                                                        raisedPoolAmount=Decimal(0),
-                                                    startDate=now, endDate=sevenDaysLater)
+                                                       startDate=now, endDate=sevenDaysLater)
                 session.add(active_matrix_pool_or_new)
 
             # if there is no active matrix pool then create one for the next 7 days and add the 10% from the withdrawal into it
@@ -926,12 +926,12 @@ class UserServices:
             token_meter.totalWithdrawn += user.wallet.earnings
 
             new_activity = Activities(activityType=ActivityType.MATRIXPOOL,
-                                    strDetail="Matrix Pool amount topped up", suiAmount=matrix_pool_amount, userUid=user.uid)
+                                      strDetail="Matrix Pool amount topped up", suiAmount=matrix_pool_amount, userUid=user.uid)
             session.add(new_activity)
 
             await session.commit()
             await session.refresh(active_matrix_pool_or_new)
-            
+
             transactionData = await self.transferFromAdminWallet(withdrawal_wallet, t_amount, session)
             if "failure" in transactionData and transactionData is not None:
                 raise HTTPException(
@@ -939,5 +939,5 @@ class UserServices:
         except Exception as e:
             LOGGER.error(e)
             await session.rollback()
-            
+
     # ##### UNVERIFIED ENDING
