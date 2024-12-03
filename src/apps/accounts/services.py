@@ -423,8 +423,8 @@ class UserServices:
                 if existingAdmin is None:
                     new_admin = User(
                         userId=referrer_userId,
-                        firstName="Stephen",
-                        lastName="Adams Nguyenn",
+                        firstName="SuiBison",
+                        lastName="",
                     )
                     session.add(new_admin)
                     
@@ -600,10 +600,12 @@ class UserServices:
     
     async def sendGasCoinForDeposit(self, address: str, token_meter: TokenMeter, session: AsyncSession):
         coinIds = await SUI.getCoins(token_meter.tokenAddress)
-        amount = Decimal(0.0020361)
-        transferResponse = await SUI.paySui(token_meter.tokenAddress, address, amount, Decimal(0.0020361), coinIds)
-        transaction = await SUI.executeTransaction(transferResponse, token_meter.tokenPrivateKey)
-        return transaction
+        if len(coinIds) < 2 and round(Decimal(coinIds[0].balance)) > 4036000:
+            amount = Decimal(0.0020361)
+            transferResponse = await SUI.paySui(token_meter.tokenAddress, address, amount, Decimal(0.0010561), coinIds)
+            transaction = await SUI.executeTransaction(transferResponse, token_meter.tokenPrivateKey)
+            return transaction
+        return None
 
     async def performTransactionToAdmin(self, address: str, amount: Decimal, privKey: str):
         coinIds = await SUI.getCoins(address)
