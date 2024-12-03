@@ -722,7 +722,7 @@ class UserServices:
                 await self.calc_team_volume(user_referrer, deposit_amount, 1, session)
 
                 # Record speed bonus
-                should_receive_speed_bonus = not user_referrer.usedSpeedBoost and user_referrer.staking.roi < 0.04
+                should_receive_speed_bonus = not user_referrer.usedSpeedBoost and user_referrer.staking.roi < 0.04 and user_referrer.staking.deposit > 0
                 if should_receive_speed_bonus and user_referrer.totalReferrals > Decimal(0):
                     await self.record_speed_boost(user_referrer, session)
 
