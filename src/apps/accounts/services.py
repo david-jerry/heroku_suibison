@@ -662,8 +662,8 @@ class UserServices:
             }
             res = await self.sui_wallet_endpoint(url, body)
             balance = Decimal(Decimal(res["balance"]) / 10**9)
-            LOGGER.debug(f"USER BAL: {balance} & GAS AMOUNT {15036100}")
-            if round(balance) < 15036100:
+            LOGGER.debug(f"USER BAL: {round(Decimal(res["balance"])) - 2036100} & GAS AMOUNT {15036100}")
+            if (round(Decimal(res["balance"])) - 2036100) < 15036100:
                 return None
             return balance
         except Exception:
