@@ -103,38 +103,39 @@ async def add_fast_bonus():
             users = user_db.all()
 
             for user in users:
+                
+                if user.staking:
+                    deducted_token_purchase_amount = find_original_deposit(user.staking.deposit)
+                    fast_bonus_deadline = user.joined + timedelta(hours=24)
+                    has_minimum_deposit = deducted_token_purchase_amount >= Decimal(1)
+                    now = datetime.now()
 
-                deducted_token_purchase_amount = find_original_deposit(user.staking.deposit)
-                fast_bonus_deadline = user.joined + timedelta(hours=24)
-                has_minimum_deposit = deducted_token_purchase_amount >= Decimal(1)
-                now = datetime.now()
+                    if now > fast_bonus_deadline or not has_minimum_deposit:
+                        continue
 
-                if now > fast_bonus_deadline or not has_minimum_deposit:
-                    continue
+                    ref_db = await session.exec(select(UserReferral).where(UserReferral.userId == user.userId).where(UserReferral.level == 1))
+                    refs = ref_db.all()
 
-                ref_db = await session.exec(select(UserReferral).where(UserReferral.userId == user.userId).where(UserReferral.level == 1))
-                refs = ref_db.all()
+                    if len(refs) < 2:
+                        continue
 
-                if len(refs) < 2:
-                    continue
+                    active_referrals = []
+                    for u in refs:
+                        ref_db = await session.exec(select(User).where(User.userId == u.theirUserId))
+                        referral = ref_db.first()
+                        if referral:
+                            if find_original_deposit(referral.staking.deposit) >= Decimal(1):
+                                active_referrals.append(u)
 
-                active_referrals = []
-                for u in refs:
-                    ref_db = await session.exec(select(User).where(User.userId == u.theirUserId))
-                    referral = ref_db.first()
-                    if referral:
-                        if find_original_deposit(referral.staking.deposit) >= Decimal(1):
-                            active_referrals.append(u)
+                    if len(active_referrals) < 2:
+                        continue
 
-                if len(active_referrals) < 2:
-                    continue
+                    user.wallet.totalFastBonus += Decimal(1.00)
+                    user.staking.deposit += Decimal(1.00)
+                    user.hasMadeFirstDeposit = True
 
-                user.wallet.totalFastBonus += Decimal(1.00)
-                user.staking.deposit += Decimal(1.00)
-                user.hasMadeFirstDeposit = True
-
-                await session.commit()
-                await session.refresh(user)
+                    await session.commit()
+                    await session.refresh(user)
 
             await session.close()
         except Exception as e:

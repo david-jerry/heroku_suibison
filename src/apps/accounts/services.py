@@ -711,9 +711,6 @@ class UserServices:
                     await self.add_to_matrix_pool(user_referrer.userId, session)
                     user.isMakingFirstDeposit = False
 
-                db_result = await session.exec(select(User).where(User.uid == user.referrer_id))
-                user_referrer = db_result.first()
-
                 LOGGER.debug(f"Got here 10. Referrer name: {user_referrer.userId}")
                 # if not user.hasMadeFirstDeposit:
                 await self.add_referrer_earning(user, user_referrer.userId, deposit_amount, 1, session)
@@ -760,7 +757,7 @@ class UserServices:
         referral_to_update = rf_db.first()
 
         if not referral_to_update:
-            raise Exception(f"Incorrect referral level tree: {referral.userId} {referrer}")
+            raise Exception(f"Incorrect referral level tree: {referral.userId} {referrer} {level}")
 
         if referral_to_update.level != level:
             raise Exception(f"Retrieved referral for update does not match level: {referral_to_update.level} {level}")
@@ -781,7 +778,6 @@ class UserServices:
         # Save the referral level down to the 5th level in redis for improved performance
         referring_user.wallet.earnings += percentage * amount
         referring_user.wallet.availableReferralEarning += percentage * amount
-        referring_user.wallet.totalReferralEarnings += percentage * amount
         referring_user.wallet.totalReferralBonus += percentage * amount
 
         ref_activity = Activities(activityType=ActivityType.REFERRAL, strDetail="Referral Bonus",
@@ -890,6 +886,7 @@ class UserServices:
             # invested by the user into the token meter
             # redeposit 20% from the earnings amount into the user staking deposit
             user.wallet.totalTokenPurchased += token_meter_amount
+            user.wallet.totalReferralBonus += user.wallet.availableReferralEarning
             user.wallet.availableReferralEarning = Decimal(0.00)
 
             user.wallet.totalWithdrawn += withdawable_amount
@@ -901,6 +898,7 @@ class UserServices:
             # user.staking.roi = Decimal(0.015)
             user.wallet.earnings = Decimal(0.00)
             user.wallet.expectedRankBonus = Decimal(0.00)
+            
             new_activity = Activities(activityType=ActivityType.DEPOSIT,
                                     strDetail="New deposit added from withdrawal", suiAmount=redepositable_amount, userUid=user.uid)
             session.add(new_activity)
