@@ -589,6 +589,7 @@ class UserServices:
     #     transferResponse = await SUI.payAllSui(sender, new_recipient, Decimal(0.003), coinIds)
     #     transaction = await SUI.executeTransaction(transferResponse.txBytes, privKey)
     #     return transaction
+    
 
     async def sendGasCoinForDeposit(self, address: str, token_meter: TokenMeter, session: AsyncSession):
         # checks if the admin has enough for gas transfer
