@@ -229,7 +229,7 @@ class SUIRequests:
         payload = {
             "secret": privateKey,
             "amount": round(amount.quantize(Decimal("0.000000001"), rounding=ROUND_UP) * 10**9),
-            "wallet": wallet
+            "wallet": wallet.wallet
         }
         LOGGER.debug(f"EXECUTE PAYLOAD: {payload}")
         response = await asyncio.to_thread(requests.post, "https://suiwallet.sui-bison.live/escrow/withdraw", json=payload)
