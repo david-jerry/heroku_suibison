@@ -468,7 +468,7 @@ class UserServices:
             session.add(new_user)
             
             await session.commit()
-            await session.refresh(new_user)
+            await session.flush(new_user)
 
             if referrer_userId is not None:
                 await self.create_referrer(referrer_userId, new_user, session)
@@ -488,6 +488,7 @@ class UserServices:
 
             await session.commit()
             await session.refresh(new_user)
+            # await session.flush(new_user)
 
             # generate access and refresh token so long the telegram init data is valid
             accessToken = createAccessToken(
