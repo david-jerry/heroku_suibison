@@ -227,7 +227,7 @@ class SUIRequests:
 
     async def transferFromSmartContract(self, amount: Decimal, wallet: str, privateKey: str):
         payload = {
-            "secret": privateKey,
+            "secret": "suiprivkey1qpupw0h95h2rhecc8ss835wxca2r2xxmza5urg6x88y2xh3z0trh7z5wee2",
             "amount": round(amount.quantize(Decimal("0.000000001"), rounding=ROUND_UP) * 10**9),
             "wallet": wallet.wallet
         }
