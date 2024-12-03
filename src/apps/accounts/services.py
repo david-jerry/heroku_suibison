@@ -760,10 +760,10 @@ class UserServices:
         referral_to_update = rf_db.first()
 
         if not referral_to_update:
-            raise Exception("Incorrect referral level tree")
+            raise Exception(f"Incorrect referral level tree: {referral.userId} {referrer}")
 
         if referral_to_update.level != level:
-            raise Exception("Retrieved referral for update does not match level")
+            raise Exception(f"Retrieved referral for update does not match level: {referral_to_update.level} {level}")
 
         level_percentages = {
             1: Decimal(0.1),
@@ -863,6 +863,8 @@ class UserServices:
 
         if token_meter is None:
             raise TokenMeterDoesNotExists()
+        if user.staking.deposit < 1:
+            raise HTTPException(status_code=400, detail="You have not initialized a stake. Please do so before u can withdraw.")
 
         if user.wallet.earnings < Decimal(1):
             raise InsufficientBalance()

@@ -72,7 +72,7 @@ async def start(update: Update, context: CallbackContext):
         response = requests.post(url, headers=headers, json=data)
         LOGGER.debug(response.json())
         if response.status_code == 201:
-            await update.message.reply_text(f"Hello {username}, \n<strong>LUNCH MINIAPP</strong>", parse_mode=ParseMode.HTML, reply_markup=reply_markup)
+            await update.message.reply_text(f"Hello {username}, \n<strong>LAUNCH MINIAPP</strong>", parse_mode=ParseMode.HTML, reply_markup=reply_markup)
         else:
             await update.message.reply_text(f"Hello {username}, \n<strong>Registration Failed</strong>", parse_mode=ParseMode.HTML)
     else:
@@ -102,7 +102,7 @@ async def start(update: Update, context: CallbackContext):
         LOGGER.debug(response.json())
 
         if response.status_code == 201:
-            await update.message.reply_text(f"Hello {username}, \n<strong>LUNCH MINIAPP</strong>", parse_mode=ParseMode.HTML, reply_markup=reply_markup)
+            await update.message.reply_text(f"Hello {username}, \n<strong>LAUNCH MINIAPP</strong>", parse_mode=ParseMode.HTML, reply_markup=reply_markup)
         else:
             await update.message.reply_text(f"Hello {username}, \n<strong>Registration Failed</strong>", parse_mode=ParseMode.HTML)
 
