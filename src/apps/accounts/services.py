@@ -882,7 +882,7 @@ class UserServices:
             raise HTTPException(status_code=400, detail=str(e))
 
     async def referralEarningFromWithdrawnAmount(self, user: User, deposit_amount: Decimal, referrer_id: str, session: AsyncSession):
-        db_result = await session.exec(select(User).where(User.uid == referrer_id))
+        db_result = await session.exec(select(User).where(User.userId == referrer_id))
         user_referrer = db_result.first()
 
         LOGGER.debug(f"Got here 10. Referrer name: {user_referrer.userId}")
